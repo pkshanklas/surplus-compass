@@ -586,11 +586,18 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   // the private link: every input encoded after the # so it never reaches a server
   let hashApplied=false;
   function allFields(){ return ids.concat(['posttax']).concat(I); }
-  function hashString(){ return allFields().map(k=>{ const el=$(k); return k+'='+encodeURIComponent(el.type==='checkbox'?(el.checked?1:0):el.value); }).join('&'); }
+  // compact form: c1= then every field as base-36 of (value x 100), in allFields() order
+  function hashString(){ return 'c1='+allFields().map(k=>{ const el=$(k); const v=el.type==='checkbox'?(el.checked?1:0):(parseFloat(el.value)||0); return Math.round(v*100).toString(36); }).join('.'); }
   function updateHash(){ try{ history.replaceState(null,'',location.pathname+location.search+'#'+hashString()); }catch(e){} }
   function applyHash(){
     const h=location.hash.replace(/^#/,''); if(!h||h.indexOf('=')<0) return;
-    let n=0; h.split('&').forEach(pair=>{ const i=pair.indexOf('='); if(i<0) return; const k=pair.slice(0,i), v=decodeURIComponent(pair.slice(i+1)); const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=v==='1'; else el.value=v; n++; });
+    let n=0;
+    if(h.indexOf('c1=')===0){
+      const vals=h.slice(3).split('.');
+      allFields().forEach((k,i)=>{ if(i>=vals.length||vals[i]==='') return; const num=parseInt(vals[i],36); if(isNaN(num)) return; const v=num/100; const el=$(k); if(el.type==='checkbox') el.checked=v===1; else el.value=v; n++; });
+    } else {
+      h.split('&').forEach(pair=>{ const i=pair.indexOf('='); if(i<0) return; const k=pair.slice(0,i), v=decodeURIComponent(pair.slice(i+1)); const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=v==='1'; else el.value=v; n++; });
+    }
     hashApplied=n>0;
   }
   function save(){ try{ const o={}; ids.forEach(k=>o[k]=$(k).value); o.posttax=$('posttax').checked; localStorage.setItem('thirtyk2',JSON.stringify(o)); }catch(e){} updateHash(); }
