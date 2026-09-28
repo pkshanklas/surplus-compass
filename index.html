@@ -6,6 +6,54 @@
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
 </head>
 <body>
+<script id="my-numbers" type="application/json">
+{
+  "loan": 3900000,
+  "hrate": 7.2,
+  "emi": 90000,
+  "surplus": 120000,
+  "lump": 1500000,
+  "horizon": 10,
+  "tax": 34.3,
+  "re": 12,
+  "rg": 9,
+  "price": 4500000,
+  "txn": 7,
+  "setup": 200000,
+  "prate": 8.75,
+  "ptenure": 20,
+  "yield": 5,
+  "opex": 25,
+  "rentg": 5,
+  "appr": 6,
+  "mixIndex": 50,
+  "mixGold": 10,
+  "mixPrepay": 40,
+  "posttax": true,
+
+  "i_gross": 480492,
+  "i_pf": 28755,
+  "i_espp": 125119,
+  "i_tds": 140000,
+  "i_wife": 90000,
+  "i_bonus": 875000,
+  "i_btax": 34.3,
+
+  "h_wife": 12000,
+  "h_me": 4000,
+  "h_society": 13000,
+  "h_milk": 2100,
+  "h_net": 1200,
+  "h_mobile": 350,
+  "h_groc": 17350,
+  "e_emi": 90000,
+  "e_trips": 300000,
+  "e_policy": 170000,
+  "e_emerg": 100000,
+  "e_fest": 100000,
+  "e_other": 100000
+}
+</script>
 <title>Surplus Compass</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
@@ -149,7 +197,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
       <button type="button" class="btn ghost" id="resetAll">Start over</button>
     </div>
   </header>
-  <p class="hint" id="linkNote" style="margin:-10px 0 14px">Your numbers live only in this browser and in the link above. Bookmark the link to open the same numbers anywhere; anyone you send it to sees them too.</p>
+  <p class="hint" id="linkNote" style="margin:-10px 0 14px">Changes you make are kept in this browser. The private link carries the current numbers to another device; anyone you send it to sees them too.</p>
 
   <div class="tabs" role="tablist" aria-label="Steps">
     <button type="button" role="tab" id="tabbtn-income" aria-selected="true" aria-controls="tab-income"><span class="step">1</span>How much is free</button>
@@ -600,8 +648,12 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
     }
     hashApplied=n>0;
   }
+  // numbers stored with the site: my-numbers.json next to the page, or an inline copy of it
+  let hasLocal=false, myNumbers=null;
+  function applyNumbers(o){ let n=0; Object.keys(o||{}).forEach(k=>{ const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=!!o[k]; else el.value=o[k]; n++; }); return n; }
+  (function inlineNumbers(){ const s=$('my-numbers'); if(!s) return; try{ myNumbers=JSON.parse(s.textContent); applyNumbers(myNumbers); }catch(e){} })();
   function save(){ try{ const o={}; ids.forEach(k=>o[k]=$(k).value); o.posttax=$('posttax').checked; localStorage.setItem('thirtyk2',JSON.stringify(o)); }catch(e){} updateHash(); }
-  function load(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk2')||'null'); if(!o) return; ids.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); if(o.posttax!=null) $('posttax').checked=o.posttax; }catch(e){} }
+  function load(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk2')||'null'); if(!o) return; hasLocal=true; ids.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); if(o.posttax!=null) $('posttax').checked=o.posttax; }catch(e){} }
   load();
   normaliseMix('mixIndex');
   ids.concat(['posttax']).forEach(k=>$(k).addEventListener('input',()=>{ render(); save(); }));
@@ -682,7 +734,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
     svg.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
   })();
   function saveIncome(){ try{ const o={}; I.forEach(k=>o[k]=$(k).value); localStorage.setItem('thirtyk-income3',JSON.stringify(o)); }catch(e){} updateHash(); }
-  function loadIncome(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk-income3')||'null'); if(!o) return; I.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); }catch(e){} }
+  function loadIncome(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk-income3')||'null'); if(!o) return; hasLocal=true; I.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); }catch(e){} }
   loadIncome();
   applyHash();
   if(hashApplied){ normaliseMix('mixIndex'); save(); saveIncome(); }
@@ -690,6 +742,11 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   renderIncome();
   render();
   updateHash();
+  // a fresher my-numbers.json on the server wins over the inline copy, but never over your own edits or a link
+  if(!hasLocal&&!hashApplied&&location.protocol.indexOf('http')===0){
+    fetch('my-numbers.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(o=>{ if(o&&applyNumbers(o)){ myNumbers=o; normaliseMix('mixIndex'); renderIncome(); render(); updateHash(); } }).catch(()=>{});
+  }
+  if(myNumbers){ $('resetAll').textContent='Reset to my saved numbers'; }
 
   $('copyLink').addEventListener('click',()=>{
     const url=location.href.split('#')[0]+'#'+hashString(); const b=$('copyLink');
@@ -708,7 +765,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   let startTab='income'; try{ startTab=localStorage.getItem('thirtyk-tab')||'income'; }catch(e){}
   showTab(startTab);
   $('resetAll').addEventListener('click',()=>{
-    if(!confirm('Clear your numbers from this browser and go back to the sample values?')) return;
+    if(!confirm(myNumbers?'Discard the changes made in this browser and reload your saved numbers?':'Clear your numbers from this browser and go back to the sample values?')) return;
     try{ ['thirtyk2','thirtyk-income3','thirtyk-tab'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
     try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
     location.reload();
