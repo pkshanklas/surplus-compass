@@ -1,0 +1,713 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>Surplus Compass</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+:root{
+  --page:#f5f6f3; --surface:#fcfcfb; --surface-2:#eef0ea; --ink:#0f1411; --ink-2:#4f5651; --muted:#84898a;
+  --grid:#e1e3dc; --axis:#c3c6bd; --border:rgba(15,20,17,.10); --accent:#1f4e3d; --accent-ink:#ffffff;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100; --s5:#e87ba4; --s8:#e34948;
+  --good:#0ca30c; --warn:#fab219; --crit:#d03b3b; --good-text:#006300;
+  --pill:#e7ebe3;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --page:#0d0e0d; --surface:#1a1a19; --surface-2:#232422; --ink:#f4f4f1; --ink-2:#c3c2b7; --muted:#8f938e;
+    --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --accent:#8fd1b3; --accent-ink:#0d0e0d;
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s8:#e66767; --good-text:#0ca30c; --pill:#2a2c29;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --page:#0d0e0d; --surface:#1a1a19; --surface-2:#232422; --ink:#f4f4f1; --ink-2:#c3c2b7; --muted:#8f938e;
+  --grid:#2c2c2a; --axis:#383835; --border:rgba(255,255,255,.10); --accent:#8fd1b3; --accent-ink:#0d0e0d;
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500; --s5:#d55181; --s8:#e66767; --good-text:#0ca30c; --pill:#2a2c29;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--page);color:var(--ink);font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;font-size:14px;line-height:1.5}
+.wrap{max-width:1240px;margin:0 auto;padding-block:20px 48px;padding-inline:16px}
+header{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px 24px;margin-bottom:18px}
+h1{font-family:"Sora","IBM Plex Sans",system-ui,sans-serif;font-weight:700;font-size:clamp(24px,3.4vw,34px);margin:0;letter-spacing:-.01em;text-wrap:balance}
+.sub{color:var(--ink-2);max-width:62ch;margin:6px 0 0}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+.layout{display:grid;grid-template-columns:300px minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.layout{grid-template-columns:1fr}}
+aside{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;position:sticky;top:env(safe-area-inset-top,0px)}
+@media (max-width:900px){aside{position:static}}
+aside h2{font-family:"Sora",sans-serif;font-size:13px;font-weight:600;margin:0 0 8px;letter-spacing:.02em}
+.group{padding-block:10px;border-top:1px solid var(--border)}
+.group:first-of-type{border-top:0;padding-top:0}
+.field{display:grid;grid-template-columns:1fr auto;gap:2px 8px;align-items:center;padding:5px 0}
+.field label{color:var(--ink-2);font-size:13px}
+.field output,.field .val{font-variant-numeric:tabular-nums;font-weight:600;font-size:13px;text-align:right}
+.field input[type=range]{grid-column:1/-1;width:100%;margin:2px 0 0;accent-color:var(--accent)}
+.field input[type=number]{grid-column:1/-1;width:100%;font:inherit;font-variant-numeric:tabular-nums;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);color:var(--ink)}
+.field input:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.seg{display:flex;gap:4px;background:var(--surface-2);padding:3px;border-radius:8px;margin:6px 0 4px}
+.seg button{flex:1;font:inherit;font-size:12px;font-weight:600;border:0;background:transparent;color:var(--ink-2);padding:6px 4px;border-radius:6px;cursor:pointer}
+.seg button[aria-pressed=true]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.seg button:focus-visible{outline:2px solid var(--accent)}
+.toggle{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px 0 2px;font-size:13px;color:var(--ink-2)}
+.toggle input{accent-color:var(--accent);width:18px;height:18px}
+.hint{font-size:12px;color:var(--muted);margin:2px 0 0}
+main{display:grid;gap:18px;min-width:0}
+.tiles{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}
+@media (max-width:1100px){.tiles{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.tiles{grid-template-columns:1fr}}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:grid;gap:6px;align-content:start}
+.tile.lead{box-shadow:0 0 0 2px var(--accent) inset}
+.tile .name{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+.chip{width:12px;height:12px;border-radius:3px;flex:none}
+.tile .big{font-family:"Sora",sans-serif;font-size:28px;font-weight:600;line-height:1.1;letter-spacing:-.01em}
+.tile .line{color:var(--ink-2);font-size:12.5px}
+.tile .line b{color:var(--ink);font-weight:600}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--pill);color:var(--ink-2);width:max-content;max-width:100%}
+.pill.good{color:var(--good-text)} .pill.warn{color:#8a5a00} .pill.crit{color:var(--crit)}
+:root[data-theme="dark"] .pill.warn{color:var(--warn)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .pill.warn{color:var(--warn)}}
+.pill i{font-style:normal}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.card h2{font-family:"Sora",sans-serif;font-size:15px;font-weight:600;margin:0}
+.card .head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:baseline;gap:8px 16px;margin-bottom:10px}
+.legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:12.5px;color:var(--ink-2)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend .sw{width:14px;height:3px;border-radius:2px}
+.chartwrap{position:relative}
+.chartwrap svg{width:100%;height:auto;display:block;overflow:visible}
+.tip{position:absolute;pointer-events:none;background:var(--surface);border:1px solid var(--border);box-shadow:0 4px 14px rgba(0,0,0,.14);border-radius:8px;padding:8px 10px;font-size:12px;min-width:170px;display:none;z-index:2}
+.tip .t{font-weight:600;margin-bottom:4px}
+.tip .r{display:flex;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}
+.tip .r span:first-child{display:inline-flex;align-items:center;gap:6px;color:var(--ink-2)}
+.callout{border-left:3px solid var(--accent);padding:6px 0 6px 14px;margin:14px 0 0;color:var(--ink-2);max-width:78ch}
+.callout b{color:var(--ink)}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:640px;font-size:13px}
+th,td{padding:8px 10px;text-align:left;vertical-align:top;border-top:1px solid var(--border)}
+thead th{border-top:0;color:var(--muted);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+thead th span{display:inline-flex;align-items:center;gap:6px;text-transform:none;letter-spacing:0;font-size:13px;color:var(--ink)}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+td:first-child{color:var(--ink-2);white-space:nowrap}
+td small{display:block;color:var(--muted);font-size:11.5px;white-space:normal}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--ink-2);font-size:13px}
+.notes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px}
+@media (max-width:760px){.notes{grid-template-columns:1fr}}
+.notes h3{display:flex;align-items:center;gap:8px;font-size:13.5px;margin:0 0 4px;font-weight:600}
+.notes ul{margin:0;padding-left:18px;color:var(--ink-2)}
+.notes li{margin:3px 0}
+.assump{color:var(--muted);font-size:12px;max-width:90ch;margin-top:14px}
+.crosshair{stroke:var(--axis);stroke-width:1}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--border);margin-bottom:18px}
+.tabs button{font:inherit;font-family:"Sora",sans-serif;font-weight:600;font-size:13.5px;background:transparent;border:0;border-bottom:2px solid transparent;color:var(--ink-2);padding:8px 14px;margin-bottom:-1px;cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabs button:focus-visible{outline:2px solid var(--accent);border-radius:4px}
+.tiles.three{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:1100px){.tiles.three{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:480px){.tiles.three{grid-template-columns:1fr}}
+.btn{font:inherit;font-weight:600;font-size:13px;background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:8px 12px;cursor:pointer;width:max-content;max-width:100%}
+.btn:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.flow{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 28px}
+@media (max-width:760px){.flow{grid-template-columns:1fr}}
+.flow table{min-width:0}
+.flow td:first-child{white-space:normal}
+.flow tr.total td{font-weight:600;color:var(--ink);border-top:2px solid var(--axis)}
+.src{font-size:11.5px;color:var(--muted)}
+.btn.ghost{background:transparent;color:var(--ink-2);border:1px solid var(--border)}
+.btn.ghost:hover{color:var(--ink);border-color:var(--axis)}
+.tabs .step{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--surface-2);color:var(--ink-2);font-size:11px;margin-right:8px;vertical-align:-4px}
+.tabs button[aria-selected=true] .step{background:var(--accent);color:var(--accent-ink)}
+details.group{padding-block:8px}
+details.group>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:"Sora",sans-serif;font-size:13px;font-weight:600;padding:2px 0}
+details.group>summary::-webkit-details-marker{display:none}
+details.group>summary::after{content:"+";color:var(--muted);font-weight:500;font-size:16px}
+details.group[open]>summary::after{content:"–"}
+details.group>summary:focus-visible{outline:2px solid var(--accent);border-radius:4px}
+details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:500;font-size:12px;color:var(--muted);margin-left:auto;margin-right:8px}
+.tile .desc{color:var(--muted);font-size:12px;line-height:1.35;margin-top:-2px}
+.inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn.small{padding:4px 8px;font-size:12px}
+@media (prefers-reduced-motion:no-preference){.tile .big{transition:opacity .2s}}
+</style>
+
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Household money plan</div>
+      <h1>Surplus Compass</h1>
+      <p class="sub">Step 1 works out how much of the two salaries and the bonus is genuinely free each month after every bill and yearly cost. Step 2 compares where that money should go and how much it builds over the years.</p>
+    </div>
+    <div class="inline">
+      <button type="button" class="btn" id="copyLink">Copy my private link</button>
+      <button type="button" class="btn ghost" id="resetAll">Start over</button>
+    </div>
+  </header>
+  <p class="hint" id="linkNote" style="margin:-10px 0 14px">Your numbers live only in this browser and in the link above. Bookmark the link to open the same numbers anywhere; anyone you send it to sees them too.</p>
+
+  <div class="tabs" role="tablist" aria-label="Steps">
+    <button type="button" role="tab" id="tabbtn-income" aria-selected="true" aria-controls="tab-income"><span class="step">1</span>How much is free</button>
+    <button type="button" role="tab" id="tabbtn-plan" aria-selected="false" aria-controls="tab-plan"><span class="step">2</span>Where it should go</button>
+  </div>
+
+  <section id="tab-income" class="layout" role="tabpanel" aria-labelledby="tabbtn-income">
+    <aside aria-label="Income and expense inputs">
+      <div class="group">
+        <h2>Your salary, an ordinary month</h2>
+        <p class="hint" style="margin:0 0 4px">Copy these from a recent payslip for a month with no bonus or vest.</p>
+        <div class="field"><label for="i_gross">Gross cash salary</label><span class="val" id="i_gross_v"></span><input type="number" id="i_gross" value="200000" step="1000" min="0"></div>
+        <div class="field"><label for="i_pf">Provident fund</label><span class="val" id="i_pf_v"></span><input type="number" id="i_pf" value="12000" step="500" min="0"></div>
+        <div class="field"><label for="i_espp">ESPP or other salary-deducted investment</label><span class="val" id="i_espp_v"></span><input type="number" id="i_espp" value="0" step="1000" min="0"></div>
+        <div class="field"><label for="i_tds">Tax deducted, typical month</label><span class="val" id="i_tds_v"></span><input type="number" id="i_tds" value="30000" step="1000" min="0"></div>
+        <p class="hint" id="i_net_hint"></p>
+        <p class="hint">Shares bought through salary, and any RSUs, stay outside this page. The deduction only reduces cash pay; the shares and their sale proceeds are never counted as income or surplus.</p>
+      </div>
+      <div class="group">
+        <h2>Household</h2>
+        <div class="field"><label for="i_wife">Partner's net pay per month</label><span class="val" id="i_wife_v"></span><input type="number" id="i_wife" value="50000" step="1000" min="0"></div>
+      </div>
+      <div class="group">
+        <h2>Annual bonus</h2>
+        <div class="field"><label for="i_bonus">Annual bonus, gross</label><span class="val" id="i_bonus_v"></span><input type="number" id="i_bonus" value="200000" step="25000" min="0"></div>
+        <div class="field"><label for="i_btax">Tax on the bonus</label><output for="i_btax" id="i_btax_v"></output><input type="range" id="i_btax" min="0" max="45" step="0.1" value="30"></div>
+        <p class="hint">Assumed to land in February. Use the gross figure from last year's bonus payslip.</p>
+      </div>
+      <div class="group">
+        <h2>Expenses, monthly</h2>
+        <div class="field"><label for="h_wife">Partner's spending money</label><span class="val" id="h_wife_v"></span><input type="number" id="h_wife" value="10000" step="500" min="0"></div>
+        <div class="field"><label for="h_me">Your spending money</label><span class="val" id="h_me_v"></span><input type="number" id="h_me" value="5000" step="500" min="0"></div>
+        <div class="field"><label for="h_society">Society maintenance</label><span class="val" id="h_society_v"></span><input type="number" id="h_society" value="5000" step="500" min="0"></div>
+        <div class="field"><label for="h_milk">Milk</label><span class="val" id="h_milk_v"></span><input type="number" id="h_milk" value="1500" step="100" min="0"></div>
+        <div class="field"><label for="h_net">Internet</label><span class="val" id="h_net_v"></span><input type="number" id="h_net" value="1000" step="100" min="0"></div>
+        <div class="field"><label for="h_mobile">Mobile recharge</label><span class="val" id="h_mobile_v"></span><input type="number" id="h_mobile" value="500" step="50" min="0"></div>
+        <div class="field"><label for="h_groc">Groceries, fruit and vegetables</label><span class="val" id="h_groc_v"></span><input type="number" id="h_groc" value="15000" step="500" min="0"></div>
+        <p class="hint" id="e_house_hint" style="font-weight:600;color:var(--ink)"></p>
+        <div class="field"><label for="e_emi">Home loan EMI</label><span class="val" id="e_emi_v"></span><input type="number" id="e_emi" value="40000" step="1000" min="0"></div>
+      </div>
+      <div class="group">
+        <h2>Expenses, yearly</h2>
+        <div class="field"><label for="e_trips">Trips</label><span class="val" id="e_trips_v"></span><input type="number" id="e_trips" value="150000" step="10000" min="0"></div>
+        <div class="field"><label for="e_policy">Term and life policies</label><span class="val" id="e_policy_v"></span><input type="number" id="e_policy" value="50000" step="10000" min="0"></div>
+        <div class="field"><label for="e_emerg">Emergencies</label><span class="val" id="e_emerg_v"></span><input type="number" id="e_emerg" value="50000" step="10000" min="0"></div>
+        <div class="field"><label for="e_fest">Home and festivals</label><span class="val" id="e_fest_v"></span><input type="number" id="e_fest" value="50000" step="10000" min="0"></div>
+        <div class="field"><label for="e_other">Buffer for months that run over</label><span class="val" id="e_other_v"></span><input type="number" id="e_other" value="50000" step="10000" min="0"></div>
+        <p class="hint" id="e_year_hint" style="font-weight:600;color:var(--ink)"></p>
+        <p class="hint" id="e_all_hint"></p>
+      </div>
+    </aside>
+
+    <main>
+      <section class="tiles three" id="itiles" aria-label="Surplus summary"></section>
+
+      <section class="card">
+        <div class="head"><h2>Cash left over, month by month</h2><span class="src">April to March, yearly expenses spread evenly</span></div>
+        <div class="chartwrap" id="ichartwrap">
+          <svg id="ichart" viewBox="0 0 860 300" role="img" aria-label="Monthly cash surplus"></svg>
+          <div class="tip" id="itip"></div>
+        </div>
+        <div class="callout" id="icallout"></div>
+      </section>
+
+      <section class="card">
+        <div class="head"><h2>Where the year's money comes from and goes</h2></div>
+        <div class="flow" id="iflow"></div>
+      </section>
+
+      <section class="card">
+        <div class="head"><h2>Read before trusting the number</h2></div>
+        <div class="notes">
+          <div><h3>Getting the inputs right</h3><ul>
+            <li>Use a payslip from a plain month: no bonus, no share vest, no arrears. The tax deducted in such a month is what repeats.</li>
+            <li>Shares bought through salary and RSUs are a separate investment. They are kept out here so nothing on this page depends on your employer's share price.</li>
+            <li>Vest months usually take extra tax out of cash pay. That is ignored here because it belongs to the share side of the ledger.</li>
+          </ul></div>
+          <div><h3>What this page assumes</h3><ul>
+            <li>Yearly expenses are spread over 12 months. In reality trips and festivals land in particular months, so keep a buffer.</li>
+            <li>Tax on the bonus is at the rate you set. For most people that is the marginal slab plus surcharge and cess.</li>
+            <li>The yearly emergencies line is spending, not the emergency fund. Keep six months of total outgo in a liquid fund before any of this is deployed.</li>
+          </ul></div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <section id="tab-plan" class="layout" role="tabpanel" aria-labelledby="tabbtn-plan" hidden>
+    <aside aria-label="Assumptions">
+      <div class="group">
+        <h2>Your situation</h2>
+        <div class="field"><label for="loan">Home loan outstanding</label><span class="val" id="loan_v"></span><input type="number" id="loan" value="3000000" step="50000" min="0"></div>
+        <div class="field"><label for="hrate">Home loan rate</label><output for="hrate" id="hrate_v"></output><input type="range" id="hrate" min="6" max="11" step="0.05" value="8.5"></div>
+        <div class="field"><label for="emi">Current EMI</label><span class="val" id="emi_v"></span><input type="number" id="emi" value="40000" step="1000" min="0"></div>
+        <p class="hint" id="emi_hint"></p>
+        <div class="field"><label for="surplus">Monthly surplus to deploy</label><span class="val" id="surplus_v"></span><input type="number" id="surplus" value="30000" step="1000" min="0"></div>
+        <p class="hint inline" id="surplus_hint"></p>
+        <div class="field"><label for="lump">Lump sum available today</label><span class="val" id="lump_v"></span><input type="number" id="lump" value="500000" step="50000" min="0"></div>
+        <p class="hint">Applied equally to all four options. The property route needs it for the down payment and registration.</p>
+        <div class="field"><label for="horizon">Compare over</label><output for="horizon" id="horizon_v"></output><input type="range" id="horizon" min="3" max="25" step="1" value="10"></div>
+        <div class="field"><label for="tax">Your marginal tax rate</label><output for="tax" id="tax_v"></output><input type="range" id="tax" min="0" max="45" step="0.1" value="30"></div>
+        <p class="hint">Your highest slab plus any surcharge and cess. Above ₹50 L of income the 30% slab becomes 34.3%.</p>
+        <label class="toggle" for="posttax"><span>Show values after exit tax and sale costs</span><input type="checkbox" id="posttax" checked></label>
+      </div>
+
+      <details class="group" open>
+        <summary>What the markets return<span class="sum" id="sum_market"></span></summary>
+        <div class="field"><label for="re">Index fund, per year</label><output for="re" id="re_v"></output><input type="range" id="re" min="4" max="20" step="0.5" value="12"></div>
+        <div class="field"><label for="rg">Gold ETF, per year</label><output for="rg" id="rg_v"></output><input type="range" id="rg" min="2" max="16" step="0.5" value="9"></div>
+        <p class="hint">Nifty 50 has averaged about 12% a year over long stretches; gold about 9%. Neither is promised.</p>
+      </details>
+
+      <details class="group" open>
+        <summary>Your mix<span class="sum" id="sum_mix"></span></summary>
+        <p class="hint" style="margin:0 0 4px">Split the surplus and lump sum three ways. Shares always total 100%. Property is left out: it cannot be bought in fractions.</p>
+        <div class="field"><label for="mixIndex">Index SIP share</label><output for="mixIndex" id="mixIndex_v"></output><input type="range" id="mixIndex" min="0" max="100" step="5" value="50"></div>
+        <div class="field"><label for="mixGold">Gold ETF share</label><output for="mixGold" id="mixGold_v"></output><input type="range" id="mixGold" min="0" max="100" step="5" value="10"></div>
+        <div class="field"><label for="mixPrepay">Prepay share</label><output for="mixPrepay" id="mixPrepay_v"></output><input type="range" id="mixPrepay" min="0" max="100" step="5" value="40"></div>
+        <p class="hint" id="mix_hint"></p>
+      </details>
+
+      <details class="group">
+        <summary>The property option<span class="sum" id="sum_prop"></span></summary>
+        <div class="seg" role="group" aria-label="Property type">
+          <button type="button" id="type_pg" aria-pressed="true">House run as PG</button>
+          <button type="button" id="type_plot" aria-pressed="false">Empty plot</button>
+        </div>
+        <div class="field"><label for="price">Purchase price</label><span class="val" id="price_v"></span><input type="number" id="price" value="4500000" step="100000" min="500000"></div>
+        <div class="field"><label for="txn">Stamp duty, registration, brokerage</label><output for="txn" id="txn_v"></output><input type="range" id="txn" min="0" max="12" step="0.5" value="7"></div>
+        <div class="field"><label for="setup">Furnishing and setup</label><span class="val" id="setup_v"></span><input type="number" id="setup" value="200000" step="25000" min="0"></div>
+        <div class="field"><label for="prate">New loan rate</label><output for="prate" id="prate_v"></output><input type="range" id="prate" min="7" max="12" step="0.05" value="8.75"></div>
+        <div class="field"><label for="ptenure">New loan tenure</label><output for="ptenure" id="ptenure_v"></output><input type="range" id="ptenure" min="5" max="30" step="1" value="20"></div>
+        <div class="field"><label for="yield">Gross rental yield (on price)</label><output for="yield" id="yield_v"></output><input type="range" id="yield" min="0" max="12" step="0.25" value="5"></div>
+        <div class="field"><label for="opex">Running costs, vacancy, upkeep</label><output for="opex" id="opex_v"></output><input type="range" id="opex" min="0" max="60" step="5" value="25"></div>
+        <div class="field"><label for="rentg">Rent growth per year</label><output for="rentg" id="rentg_v"></output><input type="range" id="rentg" min="0" max="12" step="0.5" value="5"></div>
+        <div class="field"><label for="appr">Price appreciation per year</label><output for="appr" id="appr_v"></output><input type="range" id="appr" min="0" max="15" step="0.5" value="6"></div>
+      </details>
+    </aside>
+
+    <main>
+      <section class="tiles" id="tiles" aria-label="Wealth at horizon"></section>
+
+      <section class="card">
+        <div class="head">
+          <h2 id="chart_title">Wealth built, year by year</h2>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="chartwrap" id="chartwrap">
+          <svg id="chart" viewBox="0 0 860 380" role="img" aria-labelledby="chart_title"></svg>
+          <div class="tip" id="tip"></div>
+        </div>
+        <div class="callout" id="callout"></div>
+        <details><summary>Show the same numbers as a table</summary><div class="tablewrap"><table id="yeartable"></table></div></details>
+      </section>
+
+      <section class="card">
+        <div class="head"><h2>Side by side</h2></div>
+        <div class="tablewrap"><table id="cmp"></table></div>
+      </section>
+
+      <section class="card">
+        <div class="head"><h2>What the numbers don't capture</h2></div>
+        <div class="notes">
+          <div><h3><span class="chip" style="background:var(--s1)"></span>Index SIP</h3><ul>
+            <li>Returns are not smooth. A 10-year Nifty 50 SIP has historically landed anywhere between roughly 8% and 16% a year depending on the start date. Use the slider to see how much of the lead survives at 10%.</li>
+            <li>Fully liquid. Money is back in your account in two working days, which matters if a job change or medical need comes up.</li>
+            <li>No effort after the first setup. Step-up the SIP as income rises.</li>
+          </ul></div>
+          <div><h3><span class="chip" style="background:var(--s2)"></span>Gold ETF</h3><ul>
+            <li>Gold is insurance, not a growth engine. It has had decade-long flat stretches. It shines when equity and the rupee both fall.</li>
+            <li>A sensible role is 5 to 15% of the SIP, not the whole ₹30K.</li>
+            <li>Gains are taxed at 12.5% after a year with no ₹1.25L exemption, unlike equity.</li>
+          </ul></div>
+          <div><h3><span class="chip" style="background:var(--s3)"></span>Rental property (PG)</h3><ul>
+            <li>Leverage cuts both ways. At 6% appreciation the loan magnifies gains; at 2% the EMI drains you for years with little to show.</li>
+            <li>A PG is a small business: tenant churn, repairs, a caretaker, and local rules on paying guests. Budget your time, not just money.</li>
+            <li>Illiquid and lumpy. Selling takes months and costs about 2% plus capital-gains tax. You cannot sell one room.</li>
+            <li>An empty plot earns nothing and may cost you a wall and security. It is purely a bet on appreciation, with a pricier loan.</li>
+          </ul></div>
+          <div><h3><span class="chip" style="background:var(--s4)"></span>Prepay the home loan</h3><ul>
+            <li>A guaranteed, tax-free return equal to your loan rate. No market return is guaranteed, so compare it with equity only after a haircut for risk.</li>
+            <li>Under the old tax regime, interest up to ₹2L a year is deductible, which lowers the true cost of the loan by about a third at the 30% slab. That makes prepaying less attractive than it looks.</li>
+            <li>Money paid into the loan cannot be taken back. Keep a 6-month emergency fund before prepaying anything.</li>
+            <li>Peace of mind has a value the chart cannot show. Many people split: prepay part, SIP the rest.</li>
+          </ul></div>
+        </div>
+        <p class="assump" id="assump"></p>
+      </section>
+    </main>
+  </section>
+</div>
+
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  const ids=['loan','hrate','emi','surplus','lump','horizon','tax','re','rg','price','txn','setup','prate','ptenure','yield','opex','rentg','appr','mixIndex','mixGold','mixPrepay'];
+  const pct=v=>v+'%', yrs=v=>v+' yr';
+  const fmt={loan:inr,hrate:pct,emi:inr,surplus:inr,lump:inr,horizon:yrs,tax:pct,re:pct,rg:pct,price:inr,txn:pct,setup:inr,prate:pct,ptenure:yrs,yield:pct,opex:pct,rentg:pct,appr:pct,mixIndex:pct,mixGold:pct,mixPrepay:pct};
+  const yrmo=m=>{ const y=Math.floor(m/12), r=Math.round(m-y*12); return (y?y+' yr ':'')+(r?r+' mo':'') || '0 mo'; };
+
+  function inr(x){
+    const s=x<0?'-':''; x=Math.abs(x);
+    if(x>=1e7) return s+'₹'+(x/1e7).toFixed(2)+' Cr';
+    if(x>=1e5) return s+'₹'+(x/1e5).toFixed(x>=1e6?1:2)+' L';
+    return s+'₹'+Math.round(x).toLocaleString('en-IN');
+  }
+  function emi(P,annual,years){ const r=annual/1200,n=years*12; if(P<=0)return 0; if(r===0)return P/n; return P*r*Math.pow(1+r,n)/(Math.pow(1+r,n)-1); }
+  function irr(flows){ // flows[t] per month; returns annualised
+    const npv=r=>flows.reduce((a,cf,t)=>a+cf/Math.pow(1+r,t),0);
+    let lo=-0.05,hi=0.1; if(npv(lo)*npv(hi)>0) return null;
+    for(let k=0;k<60;k++){ const mid=(lo+hi)/2; if(npv(lo)*npv(mid)<=0) hi=mid; else lo=mid; }
+    return Math.pow(1+(lo+hi)/2,12)-1;
+  }
+
+  function read(){
+    const p={}; ids.forEach(k=>p[k]=parseFloat($(k).value)||0); p.posttax=$('posttax').checked;
+    const r=p.hrate/1200;
+    p.emiTooLow = p.loan>0 && p.emi<=p.loan*r;
+    p.tenureMonths = p.loan<=0 ? 0 : p.emiTooLow ? 600 : -Math.log(1-p.loan*r/p.emi)/Math.log(1+r);
+    p.tenure = p.tenureMonths/12;
+    return p;
+  }
+
+  function simulate(p){
+    const N=p.horizon*12, S=p.surplus, L=p.lump, t=p.tax/100;
+    const me=Math.pow(1+p.re/100,1/12)-1, mg=Math.pow(1+p.rg/100,1/12)-1, ma=Math.pow(1+p.appr/100,1/12)-1;
+    const eqTax=(c,inv)=>p.posttax?c-0.125*Math.max(0,c-inv-125000):c;
+    const goldTax=(c,inv)=>p.posttax?c-0.125*Math.max(0,c-inv):c;
+
+    // 1 & 2: plain SIPs
+    function sip(S,L,m,taxfn){ let c=L,inv=L; const out=[taxfn(c,inv)]; for(let i=1;i<=N;i++){ c=c*(1+m)+S; inv+=S; out.push(taxfn(c,inv)); } return {series:out,invested:inv}; }
+    const o1=sip(S,L,me,eqTax), o2=sip(S,L,mg,goldTax);
+
+    // 4: prepay, then invest freed EMI + surplus in the index
+    const rh=p.hrate/1200, emiH=p.emi, M=Math.max(N,Math.ceil(p.tenureMonths));
+    function prepay(S,L){
+      let base=p.loan, own=Math.max(0,p.loan-L), corpus=Math.max(0,L-p.loan), inv4=corpus, close=null, intBase=0, intOwn=0;
+      const s4=[(base-own)+eqTax(corpus,inv4)];
+      for(let i=1;i<=M;i++){
+        if(base>0){ const it=base*rh; intBase+=it; base=Math.max(0,base+it-emiH); }
+        corpus*=(1+me);
+        const freed=(base>0?emiH:0)+S;
+        if(own>0){ const it=own*rh; intOwn+=it; own+=it-freed; if(own<=0){ corpus+=-own; inv4+=-own; own=0; close=i; } }
+        else { corpus+=freed; inv4+=freed; }
+        if(i<=N) s4.push((base-own)+eqTax(corpus,inv4));
+      }
+      return {series:s4,closeMonth:close,interestSaved:intBase-intOwn,emiH,baseInterest:intBase};
+    }
+    const o4=prepay(S,L);
+
+    // 5: your mix of index, gold and prepayment (surplus and lump sum split alike)
+    const a=p.mixIndex/100, b=p.mixGold/100, c=p.mixPrepay/100;
+    const m1=sip(S*a,L*a,me,eqTax), m2=sip(S*b,L*b,mg,goldTax), m4=prepay(S*c,L*c);
+    const o5={series:m1.series.map((v,i)=>v+m2.series[i]+m4.series[i]),closeMonth:m4.closeMonth,interestSaved:m4.interestSaved,parts:{index:S*a,gold:S*b,prepay:S*c}};
+
+    // 3: buy property with a loan, rent it, put any leftover surplus in the index
+    const totalCost=p.price*(1+p.txn/100)+p.setup, loanP=Math.max(0,totalCost-L), ltvOK=loanP<=p.price*0.8;
+    const rp=p.prate/1200, emiP=emi(loanP,p.prate,p.ptenure);
+    let out=loanP, value=p.price, rent=p.price*p.yield/100/12, c3=0, inv3=0, extra=0, maxShort=0, first=null, cumTax=0, cumRent=0, extraSeries=[];
+    const liq=(v,i)=>{ if(!p.posttax) return v; const sale=v*0.98, gain=sale-p.price*(1+p.txn/100); const tx=i>24?0.125*Math.max(0,gain):t*Math.max(0,gain); return sale-tx; };
+    const s3=[liq(value,0)-out];
+    for(let i=1;i<=N;i++){
+      c3*=(1+me); value*=(1+ma);
+      if(i>1&&(i-1)%12===0) rent*=(1+p.rentg/100);
+      const it=out>0?out*rp:0, pay=out>0?Math.min(emiP,out+it):0; out=Math.max(0,out+it-pay);
+      const opx=rent*p.opex/100, taxable=rent*0.7-it;
+      const tax=taxable>0?taxable*t:-Math.min(-taxable,200000/12)*t;
+      const net=rent-opx-pay-tax, avail=S+net;
+      cumTax+=tax; cumRent+=rent;
+      if(i===1) first={rent,opx,pay,tax,net,avail};
+      if(avail>=0){ c3+=avail; inv3+=avail; extraSeries.push(0); } else { extra+=-avail; maxShort=Math.max(maxShort,-avail); extraSeries.push(-avail); }
+      s3.push(liq(value,i)-out+eqTax(c3,inv3)-extra);
+    }
+    const o3={series:s3,loanP,ltvOK,emiP,first,maxShort,extra,extraSeries,totalCost,shortUpfront:Math.max(0,loanP-p.price*0.8)};
+
+    // effective annual return on what you actually put in
+    const flowsFor=(series,extraS)=>{ const f=[-L]; for(let i=1;i<=N;i++) f.push(-(S+(extraS?extraS[i-1]:0))); f[N]+=series[N]; return f; };
+    o1.irr=irr(flowsFor(o1.series)); o2.irr=irr(flowsFor(o2.series)); o3.irr=irr(flowsFor(o3.series,o3.extraSeries)); o4.irr=irr(flowsFor(o4.series)); o5.irr=irr(flowsFor(o5.series));
+    const cashIn=L+S*N;
+    return {o1,o2,o3,o4,o5,N,cashIn,emiH};
+  }
+
+  function breakEven(p){ // index CAGR at which SIP ties with prepaying, over the horizon
+    let lo=0,hi=40; const f=r=>{ const q=Object.assign({},p,{re:r}); const s=simulate(q); return s.o1.series[s.N]-s.o4.series[s.N]; };
+    if(f(lo)>0) return lo; if(f(hi)<0) return null;
+    for(let k=0;k<30;k++){ const m=(lo+hi)/2; if(f(m)<0) lo=m; else hi=m; } return (lo+hi)/2;
+  }
+
+  const OPTS=[
+    {k:'o1',name:'Index fund SIP',color:'var(--s1)',desc:'Every rupee into a Nifty 50 index fund each month'},
+    {k:'o2',name:'Gold ETF SIP',color:'var(--s2)',desc:'Every rupee into a gold ETF each month'},
+    {k:'o3',name:'Buy a house to rent out',color:'var(--s3)',desc:'New loan, run it as a PG, rent covers part of the EMI'},
+    {k:'o4',name:'Prepay the home loan',color:'var(--s4)',desc:'Every rupee as extra principal, then invest the freed EMI once the loan closes'},
+    {k:'o5',name:'Your mix',color:'var(--s5)',desc:'Index, gold and prepayment in the shares you set'}
+  ];
+
+  function pill(cls,icon,text){ return `<span class="pill ${cls}"><i>${icon}</i>${text}</span>`; }
+
+  function render(){
+    const p=read();
+    ids.forEach(k=>{ const el=$(k+'_v'); if(el) el.textContent=fmt[k](p[k]); });
+    const R=simulate(p), H=p.horizon, N=R.N;
+    $('emi_hint').textContent=p.emiTooLow?'This EMI does not even cover the interest. Check the loan amount or EMI.':'At this EMI the loan clears in '+yrmo(p.tenureMonths)+' on its own. Interest left to pay: '+inr(R.o4.baseInterest)+'.';
+    $('chart_title').textContent='Wealth built over '+H+' years'+(p.posttax?' (after exit tax)':'');
+
+    // tiles
+    const finals=OPTS.map(o=>R[o.k].series[N]); const best=Math.max(...finals);
+    const n3=R.o3, n4=R.o4;
+    $('tiles').innerHTML=OPTS.map((o,i)=>{
+      const v=finals[i], gain=v-R.cashIn, ir=R[o.k].irr;
+      let status='';
+      if(o.k==='o1'||o.k==='o2') status=pill('','◆','Market-linked');
+      if(o.k==='o3') status=!n3.ltvOK?pill('crit','✕','Needs '+inr(n3.shortUpfront)+' more upfront'):n3.maxShort>0?pill('crit','✕','Short '+inr(n3.maxShort)+'/month'):pill('good','▲','Cash flow covered');
+      if(o.k==='o4') status=n4.closeMonth?pill('good','▲','Loan closes in '+(n4.closeMonth/12).toFixed(1)+' yrs'):pill('good','▲','Guaranteed '+p.hrate+'%');
+      if(o.k==='o5') status=pill('',"◆",p.mixIndex+' / '+p.mixGold+' / '+p.mixPrepay+' split');
+      return `<div class="tile${v===best?' lead':''}"><div class="name"><span class="chip" style="background:${o.color}"></span>${o.name}</div>
+        <div class="desc">${o.desc}</div>
+        <div class="big">${inr(v)}</div>
+        <div class="line"><b>${inr(gain)}</b> gain on ${inr(R.cashIn)} put in</div>
+        <div class="line">${ir==null?'—':(ir*100).toFixed(1)+'% a year'} effective return</div>${status}</div>`;
+    }).join('');
+
+    // legend
+    $('legend').innerHTML=OPTS.map(o=>`<span title="${o.desc}"><span class="sw" style="background:${o.color}"></span>${o.name}</span>`).join('');
+    $('sum_market').textContent='index '+p.re+'%, gold '+p.rg+'%';
+    $('sum_mix').textContent=p.mixIndex+' / '+p.mixGold+' / '+p.mixPrepay;
+    $('sum_prop').textContent=inr(p.price)+', '+p.yield+'% yield';
+
+    drawChart(R,H,p);
+
+    // callout
+    const be=breakEven(p);
+    const lead=OPTS[finals.indexOf(best)];
+    let txt=`<b>${lead.name}</b> comes out ahead over ${H} years on these assumptions. `;
+    if(be!=null) txt+=`The index SIP beats prepaying the loan only if it actually returns more than <b>${be.toFixed(1)}% a year</b>; prepaying is the same outcome with zero risk. `;
+    else txt+=`On these inputs the index SIP cannot catch prepaying within the horizon. `;
+    const n5=R.o5, mixGap=finals[4]-Math.max(finals[0],finals[1],finals[3]);
+    txt+=`Your ${p.mixIndex}/${p.mixGold}/${p.mixPrepay} mix lands ${inr(Math.abs(mixGap))} ${mixGap>=0?'ahead of':'behind'} the best single choice among index, gold and prepaying${n5.closeMonth?', and still closes the home loan in '+(n5.closeMonth/12).toFixed(1)+' years':''}. `;
+    if(n3.first){ const f=n3.first; txt+=`The property, in month one, brings in ${inr(f.rent)} of rent against ${inr(f.opx)} running costs and a ${inr(f.pay)} EMI${f.tax<0?', with a '+inr(-f.tax)+' tax saving':', plus '+inr(f.tax)+' tax'}. That is ${f.net<0?inr(-f.net)+' out of pocket every month':inr(f.net)+' surplus'}, ${f.avail>=0?'which your ₹'+Math.round(p.surplus/1000)+'K covers with '+inr(f.avail)+' to spare.':'more than your surplus can cover.'}`; }
+    $('callout').innerHTML=txt;
+
+    // yearly table
+    let th='<thead><tr><th>Year</th>'+OPTS.map(o=>'<th>'+o.name+'</th>').join('')+'</tr></thead><tbody>';
+    for(let y=1;y<=H;y++) th+='<tr><td>'+y+'</td>'+OPTS.map(o=>'<td class="num">'+inr(R[o.k].series[y*12])+'</td>').join('')+'</tr>';
+    $('yeartable').innerHTML=th+'</tbody>';
+
+    // comparison table
+    const f=n3.first||{};
+    const mixParts=inr(n5.parts.index)+' index, '+inr(n5.parts.gold)+' gold, '+inr(n5.parts.prepay)+' prepay';
+    const rows=[
+      ['Wealth at year '+H, finals.map(v=>inr(v))],
+      ['Effective return on cash put in', OPTS.map(o=>R[o.k].irr==null?'—':(R[o.k].irr*100).toFixed(1)+'% a year')],
+      ['What is guaranteed', ['Nothing','Nothing','Nothing. Rent and price can both fall','Every rupee saves '+p.hrate+'% interest', 'The '+p.mixPrepay+'% prepay share saves '+p.hrate+'%; the rest is market-linked']],
+      ['Liquidity', ['High. Sell any amount in 2 days','High. Same as equity','Low. Months to sell, all or nothing','None. Prepaid money does not come back', (100-p.mixPrepay)+'% of it stays liquid']],
+      ['Monthly cash picture', ['₹'+Math.round(p.surplus/1000)+'K SIP','₹'+Math.round(p.surplus/1000)+'K SIP', n3.first?('Rent '+inr(f.rent)+' minus costs, EMI '+inr(f.pay)+(f.tax<0?', tax saving '+inr(-f.tax):', tax '+inr(f.tax))+' = '+(f.net<0?inr(-f.net)+' out of pocket':inr(f.net)+' surplus')):'—', 'EMI '+inr(R.emiH)+' + ₹'+Math.round(p.surplus/1000)+'K extra', mixParts]],
+      ['Loan position at year '+H, ['Home loan continues as scheduled','Home loan continues as scheduled', 'New '+inr(n3.loanP)+' loan'+(n3.ltvOK?'':' (exceeds 80% of price, banks will not fund this)')+', plus the home loan', n4.closeMonth?'Home loan closed in '+yrmo(n4.closeMonth)+' instead of '+yrmo(p.tenureMonths)+'. Interest saved '+inr(n4.interestSaved):'Home loan still open, '+inr(n4.interestSaved)+' interest saved so far', n5.closeMonth?'Home loan closed in '+yrmo(n5.closeMonth)+'. Interest saved '+inr(n5.interestSaved):(p.mixPrepay>0?'Home loan still open, '+inr(n5.interestSaved)+' interest saved so far':'Home loan continues as scheduled')]],
+      ['Tax on exit', ['12.5% on gains above ₹1.25L a year','12.5% on all gains after 12 months','12.5% on gain after 2 years; rent taxed at slab after 30% deduction and interest','None. Interest saved is tax-free','Each part taxed as on its own']],
+      ['Effort', ['Set once','Set once','A part-time business','Set once, or a one-click prepay each month','Two SIPs and a standing prepay instruction']],
+    ];
+    $('cmp').innerHTML='<thead><tr><th></th>'+OPTS.map(o=>`<th><span><span class="chip" style="background:${o.color}"></span>${o.name}</span></th>`).join('')+'</tr></thead><tbody>'+
+      rows.map(r=>'<tr><td>'+r[0]+'</td>'+r[1].map(c=>'<td>'+c+'</td>').join('')+'</tr>').join('')+'</tbody>';
+
+    $('assump').textContent='Model notes: monthly compounding; the lump sum is deployed on day one in every option; in the property route any surplus left after the EMI is put in the index fund, and any shortfall beyond your surplus is counted as extra money out of pocket; loan-to-value is capped at 80%; rental loss up to ₹2L a year is set off against salary; if you claim home-loan interest under the old regime, part of the interest that prepaying removes was tax-deductible and is worth less than the loan rate after tax, which this model does not reduce for; after the home loan closes, the freed EMI and your surplus go into the index fund. Returns are illustrative, not forecasts.';
+  }
+
+  // chart
+  function niceStep(raw){ const p=Math.pow(10,Math.floor(Math.log10(raw))); const m=raw/p; return (m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p; }
+  let hoverState=null;
+  function drawChart(R,H,p){
+    const svg=$('chart'), W=860,HT=380,ml=64,mr=104,mt=16,mb=34, N=R.N;
+    const all=OPTS.flatMap(o=>R[o.k].series);
+    const maxV=Math.max(...all), minV=Math.min(0,...all);
+    const step=niceStep((maxV-minV)/5); const top=Math.ceil(maxV/step)*step, bot=Math.floor(minV/step)*step;
+    const x=i=>ml+(i/N)*(W-ml-mr), y=v=>mt+(1-(v-bot)/(top-bot))*(HT-mt-mb);
+    let g='';
+    for(let v=bot;v<=top+1e-6;v+=step){ g+=`<line x1="${ml}" x2="${W-mr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--grid)" stroke-width="1"/><text x="${ml-8}" y="${(y(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)" style="font-variant-numeric:tabular-nums">${inr(v).replace('₹','')}</text>`; }
+    g+=`<line x1="${ml}" x2="${W-mr}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--axis)" stroke-width="1"/>`;
+    const yStep=H<=8?1:H<=16?2:5;
+    for(let yr=0;yr<=H;yr+=yStep) g+=`<text x="${x(yr*12).toFixed(1)}" y="${HT-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${yr===0?'Now':'Yr '+yr}</text>`;
+    OPTS.forEach(o=>{ const s=R[o.k].series; const d=s.map((v,i)=>(i?'L':'M')+x(i).toFixed(1)+' '+y(v).toFixed(1)).join(''); g+=`<path d="${d}" fill="none" stroke="${o.color}" stroke-width="2" stroke-linejoin="round"/>`; });
+    // end labels with collision nudge
+    const labels=OPTS.map(o=>({o,yy:y(R[o.k].series[N]),v:R[o.k].series[N]})).sort((a,b)=>a.yy-b.yy);
+    for(let i=1;i<labels.length;i++) if(labels[i].yy-labels[i-1].yy<15) labels[i].yy=labels[i-1].yy+15;
+    for(let i=labels.length-1;i>=0;i--) if(labels[i].yy>HT-mb-2) labels[i].yy=HT-mb-2;
+    for(let i=labels.length-2;i>=0;i--) if(labels[i+1].yy-labels[i].yy<15) labels[i].yy=labels[i+1].yy-15;
+    labels.forEach(l=>{ g+=`<circle cx="${x(N).toFixed(1)}" cy="${y(l.v).toFixed(1)}" r="4" fill="${l.o.color}" stroke="var(--surface)" stroke-width="2"/><text x="${x(N)+10}" y="${(l.yy+4).toFixed(1)}" font-size="11.5" font-weight="600" fill="var(--ink)">${inr(l.v)}</text>`; });
+    g+=`<g id="hover" style="display:none"><line id="hx" class="crosshair" y1="${mt}" y2="${HT-mb}"/>`+OPTS.map((o,i)=>`<circle id="hc${i}" r="4.5" fill="${o.color}" stroke="var(--surface)" stroke-width="2"/>`).join('')+`</g>`;
+    g+=`<rect id="hit" x="${ml}" y="${mt}" width="${W-ml-mr}" height="${HT-mt-mb}" fill="transparent"/>`;
+    svg.innerHTML=g;
+    hoverState={R,N,x,y,ml,mr,W};
+  }
+  (function wireHover(){
+    const svg=$('chart'), tip=$('tip'), wrap=$('chartwrap');
+    function move(ev){
+      if(!hoverState) return; const {R,N,x,y,ml,mr,W}=hoverState;
+      const rect=svg.getBoundingClientRect(); const px=(ev.clientX-rect.left)*(W/rect.width);
+      const i=Math.max(0,Math.min(N,Math.round((px-ml)/(W-ml-mr)*N)));
+      $('hover').style.display=''; $('hx').setAttribute('x1',x(i)); $('hx').setAttribute('x2',x(i));
+      OPTS.forEach((o,k)=>{ const c=$('hc'+k); c.setAttribute('cx',x(i)); c.setAttribute('cy',y(R[o.k].series[i])); });
+      tip.style.display='block';
+      tip.innerHTML=`<div class="t">${i===0?'Now':'Year '+Math.floor(i/12)+(i%12?', month '+(i%12):'')}</div>`+OPTS.map(o=>`<div class="r"><span><span class="chip" style="background:${o.color}"></span>${o.name}</span><b>${inr(R[o.k].series[i])}</b></div>`).join('');
+      const left=(x(i)/W)*rect.width; const flip=left>rect.width*0.6;
+      tip.style.left=(flip?left-tip.offsetWidth-14:left+14)+'px'; tip.style.top=Math.max(0,ev.clientY-rect.top-20)+'px';
+    }
+    function leave(){ tip.style.display='none'; const h=$('hover'); if(h) h.style.display='none'; }
+    svg.addEventListener('mousemove',move); svg.addEventListener('mouseleave',leave);
+    svg.addEventListener('touchstart',e=>move(e.touches[0]),{passive:true}); svg.addEventListener('touchmove',e=>move(e.touches[0]),{passive:true});
+  })();
+
+  // property type presets
+  function setType(pg){
+    $('type_pg').setAttribute('aria-pressed',pg); $('type_plot').setAttribute('aria-pressed',!pg);
+    if(pg){ $('yield').value=5; $('setup').value=200000; $('opex').value=25; $('prate').value=8.75; }
+    else { $('yield').value=0; $('setup').value=0; $('opex').value=5; $('prate').value=9.5; }
+    render();
+  }
+  $('type_pg').addEventListener('click',()=>setType(true)); $('type_plot').addEventListener('click',()=>setType(false));
+
+  // keep the three mix shares summing to 100
+  const MIX=['mixIndex','mixGold','mixPrepay'];
+  function normaliseMix(changed){
+    const v={}; MIX.forEach(k=>v[k]=parseFloat($(k).value)||0);
+    const others=MIX.filter(k=>k!==changed); let rest=100-v[changed]; if(rest<0){ v[changed]=100; rest=0; }
+    const otherSum=v[others[0]]+v[others[1]];
+    if(otherSum<=0){ v[others[0]]=rest; v[others[1]]=0; }
+    else { const first=Math.round(rest*v[others[0]]/otherSum/5)*5; v[others[0]]=first; v[others[1]]=rest-first; }
+    MIX.forEach(k=>$(k).value=v[k]);
+    $('mix_hint').textContent='Of '+inr(parseFloat($('surplus').value)||0)+' a month: '+inr((parseFloat($('surplus').value)||0)*v.mixIndex/100)+' index, '+inr((parseFloat($('surplus').value)||0)*v.mixGold/100)+' gold, '+inr((parseFloat($('surplus').value)||0)*v.mixPrepay/100)+' prepay.';
+  }
+  MIX.forEach(k=>$(k).addEventListener('input',()=>normaliseMix(k)));
+  $('surplus').addEventListener('input',()=>normaliseMix('mixIndex'));
+
+  // persistence (per-viewer convenience only)
+  // the private link: every input encoded after the # so it never reaches a server
+  let hashApplied=false;
+  function allFields(){ return ids.concat(['posttax']).concat(I); }
+  function hashString(){ return allFields().map(k=>{ const el=$(k); return k+'='+encodeURIComponent(el.type==='checkbox'?(el.checked?1:0):el.value); }).join('&'); }
+  function updateHash(){ try{ history.replaceState(null,'',location.pathname+location.search+'#'+hashString()); }catch(e){} }
+  function applyHash(){
+    const h=location.hash.replace(/^#/,''); if(!h||h.indexOf('=')<0) return;
+    let n=0; h.split('&').forEach(pair=>{ const i=pair.indexOf('='); if(i<0) return; const k=pair.slice(0,i), v=decodeURIComponent(pair.slice(i+1)); const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=v==='1'; else el.value=v; n++; });
+    hashApplied=n>0;
+  }
+  function save(){ try{ const o={}; ids.forEach(k=>o[k]=$(k).value); o.posttax=$('posttax').checked; localStorage.setItem('thirtyk2',JSON.stringify(o)); }catch(e){} updateHash(); }
+  function load(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk2')||'null'); if(!o) return; ids.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); if(o.posttax!=null) $('posttax').checked=o.posttax; }catch(e){} }
+  load();
+  normaliseMix('mixIndex');
+  ids.concat(['posttax']).forEach(k=>$(k).addEventListener('input',()=>{ render(); save(); }));
+
+  // ---------- Income and surplus page ----------
+  const HOUSE=[['h_wife',"Wife's spending money"],['h_me','Your spending money'],['h_society','Society maintenance'],['h_milk','Milk'],['h_net','Internet'],['h_mobile','Mobile recharge'],['h_groc','Groceries, fruit and vegetables']];
+  const I=['i_gross','i_pf','i_espp','i_tds','i_wife','i_bonus','i_btax'].concat(HOUSE.map(h=>h[0])).concat(['e_emi','e_trips','e_policy','e_emerg','e_fest','e_other']);
+  const MONTHS=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+  function incomeRead(){ const q={}; I.forEach(k=>q[k]=parseFloat($(k).value)||0); q.e_house=HOUSE.reduce((a,h)=>a+q[h[0]],0); return q; }
+  function incomeCalc(q){
+    const netOrd=q.i_gross-q.i_pf-q.i_espp-q.i_tds;
+    const monthlyExp=q.e_house+q.e_emi, annualExp=q.e_trips+q.e_policy+q.e_emerg+q.e_fest+q.e_other;
+    const bonusNet=q.i_bonus*(1-q.i_btax/100);
+    const rows=MONTHS.map((m,i)=>{
+      const parts={salary:netOrd,wife:q.i_wife,bonus:i===10?bonusNet:0};
+      const inflow=parts.salary+parts.wife+parts.bonus, outflow=monthlyExp+annualExp/12;
+      return {m,inflow,outflow,net:inflow-outflow,parts};
+    });
+    const ordinary=netOrd+q.i_wife-monthlyExp-annualExp/12;
+    const lumps=bonusNet;
+    const yearTotal=rows.reduce((a,r)=>a+r.net,0);
+    return {netOrd,monthlyExp,annualExp,bonusNet,rows,ordinary,lumps,yearTotal,perMonth:yearTotal/12};
+  }
+  let ibars=null;
+  function renderIncome(){
+    const q=incomeRead(), C=incomeCalc(q);
+    const YEARLY=['e_trips','e_policy','e_emerg','e_fest','e_other'];
+    I.forEach(k=>{ const el=$(k+'_v'); if(!el) return; el.textContent=k==='i_btax'?pct(q[k]):YEARLY.includes(k)?inr(q[k])+' · '+inr(q[k]/12)+' a month':inr(q[k]); });
+    $('i_net_hint').textContent='Net pay in an ordinary month: '+inr(C.netOrd)+'.';
+    $('e_house_hint').textContent='Household total: '+inr(q.e_house)+' a month.';
+    $('e_year_hint').textContent='Set aside each month for yearly costs: '+inr(C.annualExp/12)+'.';
+    $('e_all_hint').textContent='With household and EMI, total outgo is '+inr(C.monthlyExp+C.annualExp/12)+' a month.';
+    const planMonthly=Math.max(0,Math.round(C.perMonth/1000)*1000);
+    $('itiles').innerHTML=
+      `<div class="tile"><div class="name">Ordinary month, both salaries</div><div class="big">${inr(C.ordinary)}</div><div class="line">left after ${inr(C.monthlyExp)} of monthly bills and ${inr(C.annualExp/12)} set aside for yearly costs</div>${C.ordinary<0?pill('crit','✕','Salaries alone fall short'):pill('good','▲','Covered by salary')}</div>
+      <div class="tile"><div class="name">Bonus, after tax</div><div class="big">${inr(C.lumps)}</div><div class="line">${inr(q.i_bonus)} gross, paid in February</div></div>
+      <div class="tile"><div class="name">Free over the whole year</div><div class="big">${inr(C.yearTotal)}</div><div class="line">${(C.yearTotal/(C.rows.reduce((a,r)=>a+r.inflow,0)||1)*100).toFixed(0)}% of everything that comes in</div></div>
+      <div class="tile lead"><div class="name">Per month to plan with</div><div class="big">${inr(planMonthly)}</div><div class="line">the year's free cash spread evenly</div><button type="button" class="btn" id="usePlan">Use this on the comparison page</button></div>`;
+    $('usePlan').addEventListener('click',()=>{ $('surplus').value=planMonthly; render(); save(); showTab('plan'); $('surplus').focus(); });
+    $('surplus_hint').innerHTML='Step 1 works out '+inr(planMonthly)+' a month. <button type="button" class="btn small" id="useHere">Use it</button>';
+    $('useHere').addEventListener('click',()=>{ $('surplus').value=planMonthly; render(); save(); });
+    // chart
+    const svg=$('ichart'), W=860,HT=300,ml=64,mr=16,mt=14,mb=30;
+    const vals=C.rows.map(r=>r.net); const maxV=Math.max(0,...vals), minV=Math.min(0,...vals);
+    const step=niceStep(((maxV-minV)||1)/4); const top=Math.ceil(maxV/step)*step, bot=Math.floor(minV/step)*step;
+    const y=v=>mt+(1-(v-bot)/((top-bot)||1))*(HT-mt-mb); const bw=(W-ml-mr)/12, barw=bw*0.62;
+    let g='';
+    for(let v=bot;v<=top+1e-6;v+=step) g+=`<line x1="${ml}" x2="${W-mr}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="var(--grid)"/><text x="${ml-8}" y="${(y(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="var(--muted)">${inr(v).replace('₹','')}</text>`;
+    g+=`<line x1="${ml}" x2="${W-mr}" y1="${y(0).toFixed(1)}" y2="${y(0).toFixed(1)}" stroke="var(--axis)"/>`;
+    const sorted=[...vals].sort((a,b)=>b-a); const labelSet=new Set(vals.map((v,i)=>(v<0||v>=sorted[1])?i:-1));
+    C.rows.forEach((r,i)=>{ const x=ml+i*bw+(bw-barw)/2, y0=y(0), y1=y(r.net), h=Math.abs(y1-y0);
+      g+=`<rect class="ibar" data-i="${i}" x="${x.toFixed(1)}" y="${Math.min(y0,y1).toFixed(1)}" width="${barw.toFixed(1)}" height="${Math.max(h,1).toFixed(1)}" rx="3" fill="${r.net>=0?'var(--s1)':'var(--s8)'}"/>`;
+      g+=`<text x="${(x+barw/2).toFixed(1)}" y="${HT-10}" text-anchor="middle" font-size="11" fill="var(--muted)">${r.m}</text>`;
+      if(labelSet.has(i)) g+=`<text x="${(x+barw/2).toFixed(1)}" y="${(r.net>=0?y1-6:y1+14).toFixed(1)}" text-anchor="middle" font-size="11" font-weight="600" fill="var(--ink)">${inr(r.net)}</text>`;
+    });
+    svg.innerHTML=g; ibars=C;
+    // callout
+    $('icallout').innerHTML=`<b>${inr(C.ordinary)}</b> a month is free from the two salaries alone once yearly costs are spread out. The February bonus adds <b>${inr(C.lumps)}</b> after tax, so the year ends with <b>${inr(C.yearTotal)}</b> free, or <b>${inr(planMonthly)}</b> a month. ${C.ordinary<0?'Because ordinary months run negative, the bonus is not spare: part of it is needed to cover the shortfall. ':''}On top of this, ${inr(q.i_espp*12)} a year goes into ESPP and the RSUs vest separately; both sit outside these figures.`;
+    // flow tables
+    const inflows=[['Your net pay',C.netOrd*12,C.netOrd],["Wife's net pay",q.i_wife*12,q.i_wife],['Bonus after tax',C.bonusNet,C.bonusNet/12]];
+    const outflows=HOUSE.map(h=>[h[1],q[h[0]]*12,q[h[0]]]).concat([['Home loan EMI',q.e_emi*12,q.e_emi],['Trips',q.e_trips,q.e_trips/12],['Term and life policies',q.e_policy,q.e_policy/12],['Emergencies',q.e_emerg,q.e_emerg/12],['Home and festivals',q.e_fest,q.e_fest/12],['Buffer for months that run over',q.e_other,q.e_other/12]]);
+    const tbl=(title,rows,total)=>`<div><table><thead><tr><th>${title}</th><th>Per year</th><th>Per month</th></tr></thead><tbody>${rows.filter(r=>r[1]!==0).map(r=>`<tr><td>${r[0]}</td><td class="num">${inr(r[1])}</td><td class="num">${inr(r[2])}</td></tr>`).join('')}<tr class="total"><td>Total</td><td class="num">${inr(total)}</td><td class="num">${inr(total/12)}</td></tr></tbody></table></div>`;
+    const tin=inflows.reduce((a,r)=>a+r[1],0), tout=outflows.reduce((a,r)=>a+r[1],0);
+    $('iflow').innerHTML=tbl('Comes in',inflows,tin)+tbl('Goes out',outflows,tout)+
+      `<div class="callout" style="grid-column:1/-1;margin-top:0">Each month, keep <b>${inr(C.monthlyExp)}</b> for household and EMI and move <b>${inr(C.annualExp/12)}</b> into a set-aside account for the yearly costs. That is <b>${inr(C.monthlyExp+C.annualExp/12)}</b> in total, leaving <b>${inr(C.ordinary)}</b> from the two salaries.</div>`;
+  }
+  (function wireBarHover(){
+    const svg=$('ichart'), tip=$('itip');
+    svg.addEventListener('mousemove',ev=>{
+      const t=ev.target; if(!t.classList||!t.classList.contains('ibar')||!ibars){ tip.style.display='none'; return; }
+      const r=ibars.rows[+t.dataset.i], rect=svg.getBoundingClientRect(); const pr=t.getBoundingClientRect();
+      const rows=[['Your net pay',r.parts.salary],['Wife',r.parts.wife],['Bonus',r.parts.bonus],['Bills and set-asides',-r.outflow]].filter(x=>x[1]!==0);
+      tip.innerHTML=`<div class="t">${r.m}: ${inr(r.net)} left</div>`+rows.map(x=>`<div class="r"><span>${x[0]}</span><b>${inr(x[1])}</b></div>`).join('');
+      tip.style.display='block';
+      const left=pr.left-rect.left+pr.width/2; const flip=left>rect.width*0.6;
+      tip.style.left=(flip?left-tip.offsetWidth-10:left+10)+'px'; tip.style.top=Math.max(0,pr.top-rect.top-10)+'px';
+    });
+    svg.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
+  })();
+  function saveIncome(){ try{ const o={}; I.forEach(k=>o[k]=$(k).value); localStorage.setItem('thirtyk-income3',JSON.stringify(o)); }catch(e){} updateHash(); }
+  function loadIncome(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk-income3')||'null'); if(!o) return; I.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); }catch(e){} }
+  loadIncome();
+  applyHash();
+  if(hashApplied){ normaliseMix('mixIndex'); save(); saveIncome(); }
+  I.forEach(k=>$(k).addEventListener('input',()=>{ renderIncome(); saveIncome(); }));
+  renderIncome();
+  render();
+  updateHash();
+
+  $('copyLink').addEventListener('click',()=>{
+    const url=location.href.split('#')[0]+'#'+hashString(); const b=$('copyLink');
+    const done=()=>{ b.textContent='Copied'; setTimeout(()=>b.textContent='Copy my private link',2000); };
+    if(navigator.clipboard&&navigator.clipboard.writeText) navigator.clipboard.writeText(url).then(done,()=>prompt('Copy this link',url));
+    else prompt('Copy this link',url);
+  });
+
+  // tabs
+  function showTab(name){
+    ['income','plan'].forEach(n=>{ $('tab-'+n).hidden=n!==name; $('tabbtn-'+n).setAttribute('aria-selected',n===name); });
+    try{ localStorage.setItem('thirtyk-tab',name); }catch(e){}
+    if(name==='plan') render();
+  }
+  $('tabbtn-income').addEventListener('click',()=>showTab('income')); $('tabbtn-plan').addEventListener('click',()=>showTab('plan'));
+  let startTab='income'; try{ startTab=localStorage.getItem('thirtyk-tab')||'income'; }catch(e){}
+  showTab(startTab);
+  $('resetAll').addEventListener('click',()=>{
+    if(!confirm('Clear your numbers from this browser and go back to the sample values?')) return;
+    try{ ['thirtyk2','thirtyk-income3','thirtyk-tab'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
+    location.reload();
+  });
+})();
+</script>
+
+</body>
+</html>
