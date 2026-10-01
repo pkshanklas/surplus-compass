@@ -21,30 +21,26 @@
   "mixGold": 10,
   "mixPrepay": 40,
   "posttax": true,
-
   "i_gross": 480492,
   "i_pf": 28755,
   "i_espp": 125119,
   "i_tds": 140000,
-  "i_wife": 90000,
-  "i_bonus": 875000,
+  "i_wife": 97000,
+  "i_bonus": 0,
   "i_btax": 34.3,
-
   "h_wife": 12000,
-  "h_me": 4000,
+  "h_me": 12000,
   "h_society": 13000,
-  "h_milk": 2100,
+  "h_milk": 3000,
   "h_net": 1200,
-  "h_mobile": 350,
-  "h_groc": 17350,
-  "e_emi": 90000,
+  "h_mobile": 300,
+  "h_groc": 20000,
+  "e_emi": 85000,
   "e_trips": 300000,
   "e_policy": 170000,
   "e_emerg": 100000,
   "e_fest": 100000,
   "e_other": 100000,
-
-  "v_ppf": 150000,
-
-  "savedAt": 1
+  "v_ppf": 300000,
+  "savedAt": 1790879121146
 }
