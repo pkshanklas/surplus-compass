@@ -51,7 +51,9 @@
   "e_policy": 170000,
   "e_emerg": 100000,
   "e_fest": 100000,
-  "e_other": 100000
+  "e_other": 100000,
+
+  "v_ppf": 150000
 }
 </script>
 <title>Surplus Compass</title>
@@ -246,7 +248,12 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
         <div class="field"><label for="e_fest">Home and festivals</label><span class="val" id="e_fest_v"></span><input type="number" id="e_fest" value="50000" step="10000" min="0"></div>
         <div class="field"><label for="e_other">Buffer for months that run over</label><span class="val" id="e_other_v"></span><input type="number" id="e_other" value="50000" step="10000" min="0"></div>
         <p class="hint" id="e_year_hint" style="font-weight:600;color:var(--ink)"></p>
-        <p class="hint" id="e_all_hint"></p>
+      </div>
+      <div class="group">
+        <h2>Investments you already commit to, yearly</h2>
+        <div class="field"><label for="v_ppf">PPF deposit</label><span class="val" id="v_ppf_v"></span><input type="number" id="v_ppf" value="0" step="10000" min="0" max="150000"></div>
+        <p class="hint">Capped at ₹1.5 L a year. Deposit before the 5th of April to earn the full year's interest. This is taken out before the surplus is worked out, so step 2 only plans what is left.</p>
+        <p class="hint" id="e_all_hint" style="font-weight:600;color:var(--ink)"></p>
       </div>
     </aside>
 
@@ -381,6 +388,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
             <li>A guaranteed, tax-free return equal to your loan rate. No market return is guaranteed, so compare it with equity only after a haircut for risk.</li>
             <li>Under the old tax regime, interest up to ₹2L a year is deductible, which lowers the true cost of the loan by about a third at the 30% slab. That makes prepaying less attractive than it looks.</li>
             <li>Money paid into the loan cannot be taken back. Keep a 6-month emergency fund before prepaying anything.</li>
+            <li>PPF pays about 7.1% tax-free and guaranteed, almost the same as a 7.2% loan, but locks money for 15 years and is capped at ₹1.5 L a year. Fill it on step 1, then compare these options for the rest.</li>
             <li>Peace of mind has a value the chart cannot show. Many people split: prepay part, SIP the rest.</li>
           </ul></div>
         </div>
@@ -660,35 +668,35 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
 
   // ---------- Income and surplus page ----------
   const HOUSE=[['h_wife',"Wife's spending money"],['h_me','Your spending money'],['h_society','Society maintenance'],['h_milk','Milk'],['h_net','Internet'],['h_mobile','Mobile recharge'],['h_groc','Groceries, fruit and vegetables']];
-  const I=['i_gross','i_pf','i_espp','i_tds','i_wife','i_bonus','i_btax'].concat(HOUSE.map(h=>h[0])).concat(['e_emi','e_trips','e_policy','e_emerg','e_fest','e_other']);
+  const I=['i_gross','i_pf','i_espp','i_tds','i_wife','i_bonus','i_btax'].concat(HOUSE.map(h=>h[0])).concat(['e_emi','e_trips','e_policy','e_emerg','e_fest','e_other','v_ppf']);
   const MONTHS=['Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
   function incomeRead(){ const q={}; I.forEach(k=>q[k]=parseFloat($(k).value)||0); q.e_house=HOUSE.reduce((a,h)=>a+q[h[0]],0); return q; }
   function incomeCalc(q){
     const netOrd=q.i_gross-q.i_pf-q.i_espp-q.i_tds;
-    const monthlyExp=q.e_house+q.e_emi, annualExp=q.e_trips+q.e_policy+q.e_emerg+q.e_fest+q.e_other;
+    const monthlyExp=q.e_house+q.e_emi, annualExp=q.e_trips+q.e_policy+q.e_emerg+q.e_fest+q.e_other, committed=Math.min(q.v_ppf,150000);
     const bonusNet=q.i_bonus*(1-q.i_btax/100);
     const rows=MONTHS.map((m,i)=>{
       const parts={salary:netOrd,wife:q.i_wife,bonus:i===10?bonusNet:0};
-      const inflow=parts.salary+parts.wife+parts.bonus, outflow=monthlyExp+annualExp/12;
-      return {m,inflow,outflow,net:inflow-outflow,parts};
+      const inflow=parts.salary+parts.wife+parts.bonus, outflow=monthlyExp+(annualExp+committed)/12;
+      return {m,inflow,outflow,net:inflow-outflow,parts,committed:committed/12};
     });
-    const ordinary=netOrd+q.i_wife-monthlyExp-annualExp/12;
+    const ordinary=netOrd+q.i_wife-monthlyExp-(annualExp+committed)/12;
     const lumps=bonusNet;
     const yearTotal=rows.reduce((a,r)=>a+r.net,0);
-    return {netOrd,monthlyExp,annualExp,bonusNet,rows,ordinary,lumps,yearTotal,perMonth:yearTotal/12};
+    return {netOrd,monthlyExp,annualExp,committed,bonusNet,rows,ordinary,lumps,yearTotal,perMonth:yearTotal/12};
   }
   let ibars=null;
   function renderIncome(){
     const q=incomeRead(), C=incomeCalc(q);
-    const YEARLY=['e_trips','e_policy','e_emerg','e_fest','e_other'];
+    const YEARLY=['e_trips','e_policy','e_emerg','e_fest','e_other','v_ppf'];
     I.forEach(k=>{ const el=$(k+'_v'); if(!el) return; el.textContent=k==='i_btax'?pct(q[k]):YEARLY.includes(k)?inr(q[k])+' · '+inr(q[k]/12)+' a month':inr(q[k]); });
     $('i_net_hint').textContent='Net pay in an ordinary month: '+inr(C.netOrd)+'.';
     $('e_house_hint').textContent='Household total: '+inr(q.e_house)+' a month.';
     $('e_year_hint').textContent='Set aside each month for yearly costs: '+inr(C.annualExp/12)+'.';
-    $('e_all_hint').textContent='With household and EMI, total outgo is '+inr(C.monthlyExp+C.annualExp/12)+' a month.';
+    $('e_all_hint').textContent='Bills, yearly set-asides and PPF together: '+inr(C.monthlyExp+(C.annualExp+C.committed)/12)+' a month.';
     const planMonthly=Math.max(0,Math.round(C.perMonth/1000)*1000);
     $('itiles').innerHTML=
-      `<div class="tile"><div class="name">Ordinary month, both salaries</div><div class="big">${inr(C.ordinary)}</div><div class="line">left after ${inr(C.monthlyExp)} of monthly bills and ${inr(C.annualExp/12)} set aside for yearly costs</div>${C.ordinary<0?pill('crit','✕','Salaries alone fall short'):pill('good','▲','Covered by salary')}</div>
+      `<div class="tile"><div class="name">Ordinary month, both salaries</div><div class="big">${inr(C.ordinary)}</div><div class="line">left after ${inr(C.monthlyExp)} of monthly bills, ${inr(C.annualExp/12)} set aside for yearly costs${C.committed?' and '+inr(C.committed/12)+' for PPF':''}</div>${C.ordinary<0?pill('crit','✕','Salaries alone fall short'):pill('good','▲','Covered by salary')}</div>
       <div class="tile"><div class="name">Bonus, after tax</div><div class="big">${inr(C.lumps)}</div><div class="line">${inr(q.i_bonus)} gross, paid in February</div></div>
       <div class="tile"><div class="name">Free over the whole year</div><div class="big">${inr(C.yearTotal)}</div><div class="line">${(C.yearTotal/(C.rows.reduce((a,r)=>a+r.inflow,0)||1)*100).toFixed(0)}% of everything that comes in</div></div>
       <div class="tile lead"><div class="name">Per month to plan with</div><div class="big">${inr(planMonthly)}</div><div class="line">the year's free cash spread evenly</div><button type="button" class="btn" id="usePlan">Use this on the comparison page</button></div>`;
@@ -714,18 +722,18 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
     $('icallout').innerHTML=`<b>${inr(C.ordinary)}</b> a month is free from the two salaries alone once yearly costs are spread out. The February bonus adds <b>${inr(C.lumps)}</b> after tax, so the year ends with <b>${inr(C.yearTotal)}</b> free, or <b>${inr(planMonthly)}</b> a month. ${C.ordinary<0?'Because ordinary months run negative, the bonus is not spare: part of it is needed to cover the shortfall. ':''}On top of this, ${inr(q.i_espp*12)} a year goes into ESPP and the RSUs vest separately; both sit outside these figures.`;
     // flow tables
     const inflows=[['Your net pay',C.netOrd*12,C.netOrd],["Wife's net pay",q.i_wife*12,q.i_wife],['Bonus after tax',C.bonusNet,C.bonusNet/12]];
-    const outflows=HOUSE.map(h=>[h[1],q[h[0]]*12,q[h[0]]]).concat([['Home loan EMI',q.e_emi*12,q.e_emi],['Trips',q.e_trips,q.e_trips/12],['Term and life policies',q.e_policy,q.e_policy/12],['Emergencies',q.e_emerg,q.e_emerg/12],['Home and festivals',q.e_fest,q.e_fest/12],['Buffer for months that run over',q.e_other,q.e_other/12]]);
+    const outflows=HOUSE.map(h=>[h[1],q[h[0]]*12,q[h[0]]]).concat([['Home loan EMI',q.e_emi*12,q.e_emi],['Trips',q.e_trips,q.e_trips/12],['Term and life policies',q.e_policy,q.e_policy/12],['Emergencies',q.e_emerg,q.e_emerg/12],['Home and festivals',q.e_fest,q.e_fest/12],['Buffer for months that run over',q.e_other,q.e_other/12],['PPF deposit, committed investment',C.committed,C.committed/12]]);
     const tbl=(title,rows,total)=>`<div><table><thead><tr><th>${title}</th><th>Per year</th><th>Per month</th></tr></thead><tbody>${rows.filter(r=>r[1]!==0).map(r=>`<tr><td>${r[0]}</td><td class="num">${inr(r[1])}</td><td class="num">${inr(r[2])}</td></tr>`).join('')}<tr class="total"><td>Total</td><td class="num">${inr(total)}</td><td class="num">${inr(total/12)}</td></tr></tbody></table></div>`;
     const tin=inflows.reduce((a,r)=>a+r[1],0), tout=outflows.reduce((a,r)=>a+r[1],0);
     $('iflow').innerHTML=tbl('Comes in',inflows,tin)+tbl('Goes out',outflows,tout)+
-      `<div class="callout" style="grid-column:1/-1;margin-top:0">Each month, keep <b>${inr(C.monthlyExp)}</b> for household and EMI and move <b>${inr(C.annualExp/12)}</b> into a set-aside account for the yearly costs. That is <b>${inr(C.monthlyExp+C.annualExp/12)}</b> in total, leaving <b>${inr(C.ordinary)}</b> from the two salaries.</div>`;
+      `<div class="callout" style="grid-column:1/-1;margin-top:0">Each month, keep <b>${inr(C.monthlyExp)}</b> for household and EMI, move <b>${inr(C.annualExp/12)}</b> into a set-aside account for the yearly costs${C.committed?', and <b>'+inr(C.committed/12)+'</b> towards the PPF deposit':''}. That is <b>${inr(C.monthlyExp+(C.annualExp+C.committed)/12)}</b> in total, leaving <b>${inr(C.ordinary)}</b> from the two salaries.</div>`;
   }
   (function wireBarHover(){
     const svg=$('ichart'), tip=$('itip');
     svg.addEventListener('mousemove',ev=>{
       const t=ev.target; if(!t.classList||!t.classList.contains('ibar')||!ibars){ tip.style.display='none'; return; }
       const r=ibars.rows[+t.dataset.i], rect=svg.getBoundingClientRect(); const pr=t.getBoundingClientRect();
-      const rows=[['Your net pay',r.parts.salary],['Wife',r.parts.wife],['Bonus',r.parts.bonus],['Bills and set-asides',-r.outflow]].filter(x=>x[1]!==0);
+      const rows=[['Your net pay',r.parts.salary],['Partner',r.parts.wife],['Bonus',r.parts.bonus],['Bills and set-asides',-(r.outflow-r.committed)],['PPF',-r.committed]].filter(x=>x[1]!==0);
       tip.innerHTML=`<div class="t">${r.m}: ${inr(r.net)} left</div>`+rows.map(x=>`<div class="r"><span>${x[0]}</span><b>${inr(x[1])}</b></div>`).join('');
       tip.style.display='block';
       const left=pr.left-rect.left+pr.width/2; const flip=left>rect.width*0.6;
