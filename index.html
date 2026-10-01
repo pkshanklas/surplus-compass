@@ -404,6 +404,9 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
 <script>
 (function(){
   const $=id=>document.getElementById(id);
+  // one-time token handover: open the site as .../#token=XXXX once per device; the token is kept in this browser and wiped from the address bar
+  const TOKEN_KEY='thirtyk-gh-token'; let tokenJustStored=false;
+  (function(){ const m=location.hash.match(/(?:^#|&)token=([^&]+)/); if(!m) return; try{ localStorage.setItem(TOKEN_KEY,decodeURIComponent(m[1])); tokenJustStored=true; }catch(e){} try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} })();
   const ids=['loan','hrate','emi','surplus','lump','horizon','tax','re','rg','price','txn','setup','prate','ptenure','yield','opex','rentg','appr','mixIndex','mixGold','mixPrepay'];
   const pct=v=>v+'%', yrs=v=>v+' yr';
   const fmt={loan:inr,hrate:pct,emi:inr,surplus:inr,lump:inr,horizon:yrs,tax:pct,re:pct,rg:pct,price:inr,txn:pct,setup:inr,prate:pct,ptenure:yrs,yield:pct,opex:pct,rentg:pct,appr:pct,mixIndex:pct,mixGold:pct,mixPrepay:pct};
@@ -766,22 +769,19 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
 
   // Save to site: commit my-numbers.json through the GitHub API with a token kept only in this browser
   const SITE_REPO={owner:'pkshanklas',repo:'surplus-compass',branch:'gh-pages',path:'my-numbers.json'};
-  const TOKEN_KEY='thirtyk-gh-token';
   function getToken(){ try{ return localStorage.getItem(TOKEN_KEY)||''; }catch(e){ return ''; } }
+  if(tokenJustStored) setStatus('GitHub token stored in this browser. Save to site now works here.');
   function setStatus(msg,isErr){ const s=$('saveStatus'); s.textContent=msg; s.style.color=isErr?'var(--crit)':'var(--good-text)'; }
   function numbersObject(){ const o={}; allFields().forEach(k=>{ const el=$(k); o[k]=el.type==='checkbox'?el.checked:(parseFloat(el.value)||0); }); o.savedAt=Date.now(); return o; }
   async function saveToSite(){
-    let token=getToken();
-    if(!token){
-      token=prompt('Paste a GitHub token with "Contents: read and write" on the '+SITE_REPO.repo+' repository.\n\nCreate one at github.com > Settings > Developer settings > Personal access tokens > Fine-grained tokens. It is stored only in this browser.');
-      if(!token) return; token=token.trim(); try{ localStorage.setItem(TOKEN_KEY,token); }catch(e){}
-    }
+    const token=getToken();
+    if(!token){ setStatus('This browser has no GitHub token yet. Open your token link once on this device, then save.',true); return; }
     const api='https://api.github.com/repos/'+SITE_REPO.owner+'/'+SITE_REPO.repo+'/contents/'+SITE_REPO.path;
     const headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
     setStatus('Saving…');
     try{
       const cur=await fetch(api+'?ref='+SITE_REPO.branch,{headers,cache:'no-store'});
-      if(cur.status===401||cur.status===403){ try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} setStatus('The token was refused. Click Save to site again and paste a fresh one.',true); return; }
+      if(cur.status===401||cur.status===403){ try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} setStatus('GitHub refused the token. Make a fresh one and open your token link again on this device.',true); return; }
       const sha=cur.ok?(await cur.json()).sha:undefined;
       const o=numbersObject(); const text=JSON.stringify(o,null,2)+'\n';
       const body={message:'Update my numbers from the site',content:btoa(unescape(encodeURIComponent(text))),branch:SITE_REPO.branch}; if(sha) body.sha=sha;
