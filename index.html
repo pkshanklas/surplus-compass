@@ -53,7 +53,9 @@
   "e_fest": 100000,
   "e_other": 100000,
 
-  "v_ppf": 150000
+  "v_ppf": 150000,
+
+  "savedAt": 1
 }
 </script>
 <title>Surplus Compass</title>
@@ -195,11 +197,12 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
       <p class="sub">Step 1 works out how much of the two salaries and the bonus is genuinely free each month after every bill and yearly cost. Step 2 compares where that money should go and how much it builds over the years.</p>
     </div>
     <div class="inline">
-      <button type="button" class="btn" id="copyLink">Copy my private link</button>
+      <button type="button" class="btn" id="saveSite">Save to site</button>
+      <button type="button" class="btn ghost" id="copyLink">Copy my private link</button>
       <button type="button" class="btn ghost" id="resetAll">Start over</button>
     </div>
   </header>
-  <p class="hint" id="linkNote" style="margin:-10px 0 14px">Changes you make are kept in this browser. The private link carries the current numbers to another device; anyone you send it to sees them too.</p>
+  <p class="hint" id="linkNote" style="margin:-10px 0 14px">Changes are kept in this browser as you type. <b>Save to site</b> writes them to the site's numbers file so every device opens with them. <span id="saveStatus"></span> <a href="#" id="forgetToken" hidden>Forget the saved GitHub token</a></p>
 
   <div class="tabs" role="tablist" aria-label="Steps">
     <button type="button" role="tab" id="tabbtn-income" aria-selected="true" aria-controls="tab-income"><span class="step">1</span>How much is free</button>
@@ -660,7 +663,9 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   let hasLocal=false, myNumbers=null;
   function applyNumbers(o){ let n=0; Object.keys(o||{}).forEach(k=>{ const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=!!o[k]; else el.value=o[k]; n++; }); return n; }
   (function inlineNumbers(){ const s=$('my-numbers'); if(!s) return; try{ myNumbers=JSON.parse(s.textContent); applyNumbers(myNumbers); }catch(e){} })();
-  function save(){ try{ const o={}; ids.forEach(k=>o[k]=$(k).value); o.posttax=$('posttax').checked; localStorage.setItem('thirtyk2',JSON.stringify(o)); }catch(e){} updateHash(); }
+  function markEdited(){ try{ localStorage.setItem('thirtyk-edited',String(Date.now())); }catch(e){} }
+  function editedAt(){ try{ return parseInt(localStorage.getItem('thirtyk-edited')||'0',10)||0; }catch(e){ return 0; } }
+  function save(){ try{ const o={}; ids.forEach(k=>o[k]=$(k).value); o.posttax=$('posttax').checked; localStorage.setItem('thirtyk2',JSON.stringify(o)); }catch(e){} markEdited(); updateHash(); }
   function load(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk2')||'null'); if(!o) return; hasLocal=true; ids.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); if(o.posttax!=null) $('posttax').checked=o.posttax; }catch(e){} }
   load();
   normaliseMix('mixIndex');
@@ -741,7 +746,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
     });
     svg.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
   })();
-  function saveIncome(){ try{ const o={}; I.forEach(k=>o[k]=$(k).value); localStorage.setItem('thirtyk-income3',JSON.stringify(o)); }catch(e){} updateHash(); }
+  function saveIncome(){ try{ const o={}; I.forEach(k=>o[k]=$(k).value); localStorage.setItem('thirtyk-income3',JSON.stringify(o)); }catch(e){} markEdited(); updateHash(); }
   function loadIncome(){ try{ const o=JSON.parse(localStorage.getItem('thirtyk-income3')||'null'); if(!o) return; hasLocal=true; I.forEach(k=>{ if(o[k]!=null) $(k).value=o[k]; }); }catch(e){} }
   loadIncome();
   applyHash();
@@ -750,11 +755,47 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   renderIncome();
   render();
   updateHash();
-  // a fresher my-numbers.json on the server wins over the inline copy, but never over your own edits or a link
-  if(!hasLocal&&!hashApplied&&location.protocol.indexOf('http')===0){
-    fetch('my-numbers.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(o=>{ if(o&&applyNumbers(o)){ myNumbers=o; normaliseMix('mixIndex'); renderIncome(); render(); updateHash(); } }).catch(()=>{});
+  // the site's numbers file wins over this browser's copy when it was saved more recently than the last local edit, never over a link
+  if(!hashApplied&&location.protocol.indexOf('http')===0){
+    fetch('my-numbers.json',{cache:'no-store'}).then(r=>r.ok?r.json():null).then(o=>{
+      if(!o) return; const fileTime=o.savedAt||0;
+      if(!hasLocal||fileTime>editedAt()){ if(applyNumbers(o)){ myNumbers=o; normaliseMix('mixIndex'); renderIncome(); render(); save(); saveIncome(); try{ localStorage.setItem('thirtyk-edited',String(fileTime)); }catch(e){} } }
+    }).catch(()=>{});
   }
   if(myNumbers){ $('resetAll').textContent='Reset to my saved numbers'; }
+
+  // Save to site: commit my-numbers.json through the GitHub API with a token kept only in this browser
+  const SITE_REPO={owner:'pkshanklas',repo:'surplus-compass',branch:'gh-pages',path:'my-numbers.json'};
+  const TOKEN_KEY='thirtyk-gh-token';
+  function getToken(){ try{ return localStorage.getItem(TOKEN_KEY)||''; }catch(e){ return ''; } }
+  function setStatus(msg,isErr){ const s=$('saveStatus'); s.textContent=msg; s.style.color=isErr?'var(--crit)':'var(--good-text)'; }
+  function numbersObject(){ const o={}; allFields().forEach(k=>{ const el=$(k); o[k]=el.type==='checkbox'?el.checked:(parseFloat(el.value)||0); }); o.savedAt=Date.now(); return o; }
+  async function saveToSite(){
+    let token=getToken();
+    if(!token){
+      token=prompt('Paste a GitHub token with "Contents: read and write" on the '+SITE_REPO.repo+' repository.\n\nCreate one at github.com > Settings > Developer settings > Personal access tokens > Fine-grained tokens. It is stored only in this browser.');
+      if(!token) return; token=token.trim(); try{ localStorage.setItem(TOKEN_KEY,token); }catch(e){}
+    }
+    const api='https://api.github.com/repos/'+SITE_REPO.owner+'/'+SITE_REPO.repo+'/contents/'+SITE_REPO.path;
+    const headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','Content-Type':'application/json'};
+    setStatus('Saving…');
+    try{
+      const cur=await fetch(api+'?ref='+SITE_REPO.branch,{headers,cache:'no-store'});
+      if(cur.status===401||cur.status===403){ try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} setStatus('The token was refused. Click Save to site again and paste a fresh one.',true); return; }
+      const sha=cur.ok?(await cur.json()).sha:undefined;
+      const o=numbersObject(); const text=JSON.stringify(o,null,2)+'\n';
+      const body={message:'Update my numbers from the site',content:btoa(unescape(encodeURIComponent(text))),branch:SITE_REPO.branch}; if(sha) body.sha=sha;
+      const put=await fetch(api,{method:'PUT',headers,body:JSON.stringify(body)});
+      if(!put.ok){ const e=await put.json().catch(()=>({})); setStatus('Save failed: '+(e.message||put.status),true); return; }
+      myNumbers=o; try{ localStorage.setItem('thirtyk-edited',String(o.savedAt)); }catch(e){}
+      $('resetAll').textContent='Reset to my saved numbers';
+      setStatus('Saved. Other devices pick it up within a few minutes.');
+    }catch(e){ setStatus('Save failed: '+(e.message||'network error'),true); }
+    $('forgetToken').hidden=!getToken();
+  }
+  $('saveSite').addEventListener('click',saveToSite);
+  $('forgetToken').hidden=!getToken();
+  $('forgetToken').addEventListener('click',ev=>{ ev.preventDefault(); try{ localStorage.removeItem(TOKEN_KEY); }catch(e){} $('forgetToken').hidden=true; setStatus('Token forgotten.'); });
 
   $('copyLink').addEventListener('click',()=>{
     const url=location.href.split('#')[0]+'#'+hashString(); const b=$('copyLink');
@@ -774,7 +815,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   showTab(startTab);
   $('resetAll').addEventListener('click',()=>{
     if(!confirm(myNumbers?'Discard the changes made in this browser and reload your saved numbers?':'Clear your numbers from this browser and go back to the sample values?')) return;
-    try{ ['thirtyk2','thirtyk-income3','thirtyk-tab'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    try{ ['thirtyk2','thirtyk-income3','thirtyk-tab','thirtyk-edited'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
     try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
     location.reload();
   });
