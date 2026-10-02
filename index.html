@@ -11,7 +11,7 @@
   "loan": 3900000,
   "hrate": 7.2,
   "emi": 90000,
-  "surplus": 120000,
+  "surplus": 40000,
   "lump": 1500000,
   "horizon": 10,
   "tax": 34.3,
@@ -34,24 +34,41 @@
   "i_pf": 28755,
   "i_espp": 125119,
   "i_tds": 140000,
-  "i_wife": 97000,
+  "i_wife": 0,
   "i_bonus": 0,
   "i_btax": 34.3,
-  "h_wife": 12000,
+  "h_wife": 0,
   "h_me": 12000,
   "h_society": 13000,
   "h_milk": 3000,
   "h_net": 1200,
   "h_mobile": 300,
   "h_groc": 20000,
-  "e_emi": 85000,
+  "e_emi": 20000,
   "e_trips": 300000,
   "e_policy": 170000,
   "e_emerg": 100000,
   "e_fest": 100000,
   "e_other": 100000,
   "v_ppf": 300000,
-  "savedAt": 1790879121146
+  "track": {
+    "emi": {
+      "0": 20000
+    },
+    "aside": {
+      "0": 64167
+    },
+    "ppf": {
+      "0": 12500
+    },
+    "house": {
+      "0": 49500
+    },
+    "gold": {},
+    "index": {},
+    "prepay": {}
+  },
+  "savedAt": 1790934439011
 }
 </script>
 <title>Surplus Compass</title>
@@ -299,8 +316,8 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
       </div>
       <div class="group">
         <h2>Investments you already commit to, yearly</h2>
-        <div class="field"><label for="v_ppf">PPF deposit</label><span class="val" id="v_ppf_v"></span><input type="number" id="v_ppf" value="0" step="10000" min="0" max="150000"></div>
-        <p class="hint">Capped at ₹1.5 L a year. Deposit before the 5th of April to earn the full year's interest. This is taken out before the surplus is worked out, so step 2 only plans what is left.</p>
+        <div class="field"><label for="v_ppf">PPF deposits, all accounts</label><span class="val" id="v_ppf_v"></span><input type="number" id="v_ppf" value="0" step="10000" min="0"></div>
+        <p class="hint">₹1.5 L a year per account, so ₹3 L for two. Deposit before the 5th of each month, or in early April, to earn the full interest. This is taken out before the surplus is worked out, so step 2 only plans what is left.</p>
         <p class="hint" id="e_all_hint" style="font-weight:600;color:var(--ink)"></p>
       </div>
     </aside>
@@ -727,7 +744,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   function incomeRead(){ const q={}; I.forEach(k=>q[k]=parseFloat($(k).value)||0); q.e_house=HOUSE.reduce((a,h)=>a+q[h[0]],0); return q; }
   function incomeCalc(q){
     const netOrd=q.i_gross-q.i_pf-q.i_espp-q.i_tds;
-    const monthlyExp=q.e_house+q.e_emi, annualExp=q.e_trips+q.e_policy+q.e_emerg+q.e_fest+q.e_other, committed=Math.min(q.v_ppf,150000);
+    const monthlyExp=q.e_house+q.e_emi, annualExp=q.e_trips+q.e_policy+q.e_emerg+q.e_fest+q.e_other, committed=q.v_ppf;
     const bonusNet=q.i_bonus*(1-q.i_btax/100);
     const rows=MONTHS.map((m,i)=>{
       const parts={salary:netOrd,wife:q.i_wife,bonus:i===10?bonusNet:0};
