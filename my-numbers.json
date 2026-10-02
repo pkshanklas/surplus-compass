@@ -25,7 +25,7 @@
   "i_pf": 28755,
   "i_espp": 125119,
   "i_tds": 140000,
-  "i_wife": 97000,
+  "i_wife": 85000,
   "i_bonus": 0,
   "i_btax": 34.3,
   "h_wife": 12000,
@@ -35,12 +35,15 @@
   "h_net": 1200,
   "h_mobile": 300,
   "h_groc": 20000,
-  "e_emi": 85000,
+  "e_emi": 90000,
   "e_trips": 300000,
   "e_policy": 170000,
   "e_emerg": 100000,
   "e_fest": 100000,
   "e_other": 100000,
   "v_ppf": 300000,
-  "savedAt": 1790879121146
+  "track": {
+    "emi": {}
+  },
+  "savedAt": 1790933906575
 }
