@@ -186,6 +186,29 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
 .tile .desc{color:var(--muted);font-size:12px;line-height:1.35;margin-top:-2px}
 .inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .btn.small{padding:4px 8px;font-size:12px}
+.track table{min-width:1180px;font-size:12.5px}
+.track th,.track td{padding:6px 6px;text-align:center;white-space:nowrap}
+.track th:first-child,.track td:first-child{text-align:left;position:sticky;left:0;background:var(--surface);z-index:1;min-width:170px}
+.track thead th{text-align:center}
+.track thead th:first-child{text-align:left}
+.track th.cur,.track td.cur{background:var(--surface-2)}
+.track td.cur:first-child{background:var(--surface)}
+.track .cell{display:inline-flex;align-items:center;gap:4px}
+.track .cell input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);margin:0}
+.track .cell input[type=number]{width:74px;font:inherit;font-size:12px;font-variant-numeric:tabular-nums;padding:3px 4px;border:1px solid var(--border);border-radius:4px;background:var(--surface);color:var(--ink)}
+.track .cell input[type=number]:disabled{opacity:.45}
+.track tr.total td{font-weight:600;border-top:2px solid var(--axis)}
+.track td.future{color:var(--muted)}
+.planrow{display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:13px;color:var(--ink-2)}
+.planrow b{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600}
+.barrow{display:grid;grid-template-columns:170px 1fr 150px;gap:12px;align-items:center;padding:7px 0;border-top:1px solid var(--border);font-size:13px}
+.barrow:first-child{border-top:0}
+@media (max-width:640px){.barrow{grid-template-columns:1fr;gap:4px}}
+.bar{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--s1);border-radius:4px}
+.bar>i.behind{background:var(--s8)}
+.barrow .n{font-variant-numeric:tabular-nums;color:var(--ink-2);text-align:right}
+@media (max-width:640px){.barrow .n{text-align:left}}
 @media (prefers-reduced-motion:no-preference){.tile .big{transition:opacity .2s}}
 </style>
 
@@ -207,7 +230,33 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   <div class="tabs" role="tablist" aria-label="Steps">
     <button type="button" role="tab" id="tabbtn-income" aria-selected="true" aria-controls="tab-income"><span class="step">1</span>How much is free</button>
     <button type="button" role="tab" id="tabbtn-plan" aria-selected="false" aria-controls="tab-plan"><span class="step">2</span>Where it should go</button>
+    <button type="button" role="tab" id="tabbtn-track" aria-selected="false" aria-controls="tab-track"><span class="step">3</span>What I actually did</button>
   </div>
+
+  <section id="tab-track" class="layout" role="tabpanel" aria-labelledby="tabbtn-track" hidden>
+    <aside aria-label="Tracking plan">
+      <div class="group">
+        <h2>October 2026 to September 2027</h2>
+        <p class="hint" style="margin:0 0 8px">Tick a box when the money has moved. The amount fills in from the plan; change it if you moved a different sum. Press <b>Save to site</b> so the ticks follow you to other devices.</p>
+      </div>
+      <div class="group">
+        <h2>Planned each month</h2>
+        <div id="trackPlanList"></div>
+        <p class="hint">These come from steps 1 and 2. Change them there.</p>
+      </div>
+    </aside>
+    <main>
+      <section class="tiles three" id="ttiles" aria-label="Progress summary"></section>
+      <section class="card">
+        <div class="head"><h2>Month by month</h2><span class="src" id="trackToday"></span></div>
+        <div class="tablewrap track"><table id="trackTable"></table></div>
+      </section>
+      <section class="card">
+        <div class="head"><h2>Progress by bucket</h2><span class="src">against the months that have passed</span></div>
+        <div id="trackBars"></div>
+      </section>
+    </main>
+  </section>
 
   <section id="tab-income" class="layout" role="tabpanel" aria-labelledby="tabbtn-income">
     <aside aria-label="Income and expense inputs">
@@ -406,6 +455,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   const $=id=>document.getElementById(id);
   // one-time token handover: open the site as .../#token=XXXX once per device; the token is kept in this browser and wiped from the address bar
   const TOKEN_KEY='thirtyk-gh-token'; let tokenJustStored=false;
+  let trackState={}; // ticks on the "what I actually did" page; filled by applyNumbers or loadTrack
   (function(){ const m=location.hash.match(/(?:^#|&)token=([^&]+)/); if(!m) return; try{ localStorage.setItem(TOKEN_KEY,decodeURIComponent(m[1])); tokenJustStored=true; }catch(e){} try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){} })();
   const ids=['loan','hrate','emi','surplus','lump','horizon','tax','re','rg','price','txn','setup','prate','ptenure','yield','opex','rentg','appr','mixIndex','mixGold','mixPrepay'];
   const pct=v=>v+'%', yrs=v=>v+' yr';
@@ -664,7 +714,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   }
   // numbers stored with the site: my-numbers.json next to the page, or an inline copy of it
   let hasLocal=false, myNumbers=null;
-  function applyNumbers(o){ let n=0; Object.keys(o||{}).forEach(k=>{ const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=!!o[k]; else el.value=o[k]; n++; }); return n; }
+  function applyNumbers(o){ let n=0; Object.keys(o||{}).forEach(k=>{ const el=$(k); if(!el||!allFields().includes(k)) return; if(el.type==='checkbox') el.checked=!!o[k]; else el.value=o[k]; n++; }); if(o&&o.track&&typeof o.track==='object'){ trackState=o.track; try{ localStorage.setItem('thirtyk-track',JSON.stringify(trackState)); }catch(e){} } return n; }
   (function inlineNumbers(){ const s=$('my-numbers'); if(!s) return; try{ myNumbers=JSON.parse(s.textContent); applyNumbers(myNumbers); }catch(e){} })();
   function markEdited(){ try{ localStorage.setItem('thirtyk-edited',String(Date.now())); }catch(e){} }
   function editedAt(){ try{ return parseInt(localStorage.getItem('thirtyk-edited')||'0',10)||0; }catch(e){ return 0; } }
@@ -772,7 +822,7 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
   function getToken(){ try{ return localStorage.getItem(TOKEN_KEY)||''; }catch(e){ return ''; } }
   if(tokenJustStored) setStatus('GitHub token stored in this browser. Save to site now works here.');
   function setStatus(msg,isErr){ const s=$('saveStatus'); s.textContent=msg; s.style.color=isErr?'var(--crit)':'var(--good-text)'; }
-  function numbersObject(){ const o={}; allFields().forEach(k=>{ const el=$(k); o[k]=el.type==='checkbox'?el.checked:(parseFloat(el.value)||0); }); o.savedAt=Date.now(); return o; }
+  function numbersObject(){ const o={}; allFields().forEach(k=>{ const el=$(k); o[k]=el.type==='checkbox'?el.checked:(parseFloat(el.value)||0); }); o.track=trackState; o.savedAt=Date.now(); return o; }
   async function saveToSite(){
     const token=getToken();
     if(!token){ setStatus('This browser has no GitHub token yet. Open your token link once on this device, then save.',true); return; }
@@ -804,18 +854,69 @@ details.group>summary .sum{font-family:"IBM Plex Sans",sans-serif;font-weight:50
     else prompt('Copy this link',url);
   });
 
+  // ---------- Track what I actually did ----------
+  const TRACK_START={y:2026,m:9}; // October 2026
+  const TRACK_MONTHS=12;
+  const TRACK_ROWS=[
+    {k:'house',name:'Household transfer',plan:(q,C,p)=>q.e_house},
+    {k:'emi',name:'Home loan EMI',plan:(q,C,p)=>q.e_emi},
+    {k:'aside',name:'Yearly set-aside',plan:(q,C,p)=>C.annualExp/12},
+    {k:'ppf',name:'PPF',plan:(q,C,p)=>C.committed/12},
+    {k:'index',name:'Index fund SIP',plan:(q,C,p)=>p.surplus*p.mixIndex/100},
+    {k:'gold',name:'Gold ETF SIP',plan:(q,C,p)=>p.surplus*p.mixGold/100},
+    {k:'prepay',name:'Loan prepayment',plan:(q,C,p)=>p.surplus*p.mixPrepay/100}
+  ];
+  function loadTrack(){ try{ const t=JSON.parse(localStorage.getItem('thirtyk-track')||'null'); if(t) trackState=t; }catch(e){} }
+  function saveTrack(){ try{ localStorage.setItem('thirtyk-track',JSON.stringify(trackState)); }catch(e){} markEdited(); }
+  function monthLabel(i){ const d=new Date(TRACK_START.y,TRACK_START.m+i,1); return d.toLocaleString('en-IN',{month:'short'})+' '+String(d.getFullYear()).slice(2); }
+  function monthsElapsed(){ const now=new Date(); const n=(now.getFullYear()-TRACK_START.y)*12+(now.getMonth()-TRACK_START.m)+1; return Math.max(0,Math.min(TRACK_MONTHS,n)); }
+  function trackPlans(){ const q=incomeRead(), C=incomeCalc(q), p=read(); const o={}; TRACK_ROWS.forEach(r=>o[r.k]=Math.round(r.plan(q,C,p))); return o; }
+  function renderTrack(){
+    const plans=trackPlans(), elapsed=monthsElapsed();
+    $('trackToday').textContent=elapsed?elapsed+' of '+TRACK_MONTHS+' months have started':'Tracking starts in October 2026';
+    $('trackPlanList').innerHTML=TRACK_ROWS.map(r=>`<div class="planrow"><span>${r.name}</span><b>${inr(plans[r.k])}</b></div>`).join('')+`<div class="planrow" style="border-top:1px solid var(--border);margin-top:4px;padding-top:8px"><span>Total</span><b>${inr(TRACK_ROWS.reduce((a,r)=>a+plans[r.k],0))}</b></div>`;
+    let doneTotal=0, planSoFar=0, planYear=0; const rowDone={}, rowPlanSoFar={};
+    TRACK_ROWS.forEach(r=>{ const cells=trackState[r.k]||{}; let d=0; for(let i=0;i<TRACK_MONTHS;i++){ if(cells[i]!=null) d+=+cells[i]||0; } rowDone[r.k]=d; rowPlanSoFar[r.k]=plans[r.k]*elapsed; doneTotal+=d; planSoFar+=plans[r.k]*elapsed; planYear+=plans[r.k]*TRACK_MONTHS; });
+    const gap=doneTotal-planSoFar;
+    $('ttiles').innerHTML=
+      `<div class="tile"><div class="name">Moved so far</div><div class="big">${inr(doneTotal)}</div><div class="line">everything ticked across all buckets</div></div>
+      <div class="tile"><div class="name">Planned by now</div><div class="big">${inr(planSoFar)}</div><div class="line">${elapsed} month${elapsed===1?'':'s'} of plan</div></div>
+      <div class="tile${gap>=0?' lead':''}"><div class="name">${gap>=0?'Ahead of plan':'Behind plan'}</div><div class="big">${inr(Math.abs(gap))}</div>${gap>=0?pill('good','▲','On track'):pill('crit','✕','Catch up '+inr(-gap))}</div>
+      <div class="tile"><div class="name">Whole year</div><div class="big">${inr(planYear)}</div><div class="line">${planYear?Math.round(doneTotal/planYear*100):0}% done</div></div>`;
+    // table
+    let h='<thead><tr><th>Bucket</th>'+Array.from({length:TRACK_MONTHS},(_,i)=>`<th class="${i===elapsed-1?'cur':''}">${monthLabel(i)}</th>`).join('')+'<th>Done</th></tr></thead><tbody>';
+    TRACK_ROWS.forEach(r=>{ const cells=trackState[r.k]||{};
+      h+=`<tr><td>${r.name}<small>${inr(plans[r.k])} a month</small></td>`;
+      for(let i=0;i<TRACK_MONTHS;i++){ const on=cells[i]!=null; const v=on?cells[i]:plans[r.k];
+        h+=`<td class="${i===elapsed-1?'cur':''}${i>=elapsed?' future':''}"><span class="cell"><input type="checkbox" data-r="${r.k}" data-i="${i}" ${on?'checked':''} aria-label="${r.name} ${monthLabel(i)} done"><input type="number" data-r="${r.k}" data-i="${i}" value="${Math.round(v)}" step="500" min="0" ${on?'':'disabled'} aria-label="${r.name} ${monthLabel(i)} amount"></span></td>`; }
+      h+=`<td class="num">${inr(rowDone[r.k])}</td></tr>`;
+    });
+    h+='<tr class="total"><td>Month total</td>'+Array.from({length:TRACK_MONTHS},(_,i)=>{ let t=0; TRACK_ROWS.forEach(r=>{ const c=(trackState[r.k]||{})[i]; if(c!=null) t+=+c||0; }); return `<td class="${i===elapsed-1?'cur':''}">${t?inr(t):'—'}</td>`; }).join('')+`<td class="num">${inr(doneTotal)}</td></tr></tbody>`;
+    $('trackTable').innerHTML=h;
+    // bars
+    $('trackBars').innerHTML=TRACK_ROWS.map(r=>{ const target=rowPlanSoFar[r.k], done=rowDone[r.k]; const pct=target?Math.min(100,done/target*100):(done?100:0); const behind=target>0&&done<target-1; return `<div class="barrow"><span>${r.name}</span><div class="bar"><i class="${behind?'behind':''}" style="width:${pct.toFixed(0)}%"></i></div><span class="n">${inr(done)} of ${inr(target)}${behind?' · short '+inr(target-done):''}</span></div>`; }).join('');
+  }
+  $('trackTable').addEventListener('change',ev=>{
+    const t=ev.target; if(!t.dataset||t.dataset.r==null) return; const r=t.dataset.r, i=+t.dataset.i; trackState[r]=trackState[r]||{};
+    if(t.type==='checkbox'){ if(t.checked){ trackState[r][i]=trackPlans()[r]; } else { delete trackState[r][i]; } }
+    else { trackState[r][i]=parseFloat(t.value)||0; }
+    saveTrack(); renderTrack();
+  });
+  loadTrack();
+
   // tabs
   function showTab(name){
-    ['income','plan'].forEach(n=>{ $('tab-'+n).hidden=n!==name; $('tabbtn-'+n).setAttribute('aria-selected',n===name); });
+    ['income','plan','track'].forEach(n=>{ $('tab-'+n).hidden=n!==name; $('tabbtn-'+n).setAttribute('aria-selected',n===name); });
     try{ localStorage.setItem('thirtyk-tab',name); }catch(e){}
     if(name==='plan') render();
+    if(name==='track') renderTrack();
   }
-  $('tabbtn-income').addEventListener('click',()=>showTab('income')); $('tabbtn-plan').addEventListener('click',()=>showTab('plan'));
+  $('tabbtn-income').addEventListener('click',()=>showTab('income')); $('tabbtn-plan').addEventListener('click',()=>showTab('plan')); $('tabbtn-track').addEventListener('click',()=>showTab('track'));
   let startTab='income'; try{ startTab=localStorage.getItem('thirtyk-tab')||'income'; }catch(e){}
   showTab(startTab);
   $('resetAll').addEventListener('click',()=>{
     if(!confirm(myNumbers?'Discard the changes made in this browser and reload your saved numbers?':'Clear your numbers from this browser and go back to the sample values?')) return;
-    try{ ['thirtyk2','thirtyk-income3','thirtyk-tab','thirtyk-edited'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
+    try{ ['thirtyk2','thirtyk-income3','thirtyk-tab','thirtyk-edited','thirtyk-track'].forEach(k=>localStorage.removeItem(k)); }catch(e){}
     try{ history.replaceState(null,'',location.pathname+location.search); }catch(e){}
     location.reload();
   });
